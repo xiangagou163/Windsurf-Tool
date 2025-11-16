@@ -11,17 +11,61 @@ const { v4: uuidv4 } = require('uuid');
  */
 class WindsurfPathDetector {
   /**
+   * 获取用户主目录（兼容 Electron 和 Node.js）
+   */
+  static getHomeDir() {
+    try {
+      // 尝试使用 Electron 的 app.getPath
+      if (typeof app !== 'undefined' && app.getPath) {
+        return app.getPath('home');
+      }
+    } catch (error) {
+      // Electron 不可用
+    }
+    
+    // 使用 Node.js 的 os.homedir()
+    const os = require('os');
+    return os.homedir();
+  }
+  
+  /**
+   * 获取 AppData 路径（兼容 Electron 和 Node.js）
+   */
+  static getAppDataDir() {
+    try {
+      // 尝试使用 Electron 的 app.getPath
+      if (typeof app !== 'undefined' && app.getPath) {
+        return app.getPath('appData');
+      }
+    } catch (error) {
+      // Electron 不可用
+    }
+    
+    // 使用 Node.js 方式
+    const os = require('os');
+    const homeDir = os.homedir();
+    
+    if (process.platform === 'win32') {
+      return path.join(homeDir, 'AppData', 'Roaming');
+    } else if (process.platform === 'darwin') {
+      return path.join(homeDir, 'Library', 'Application Support');
+    } else {
+      return path.join(homeDir, '.config');
+    }
+  }
+  
+  /**
    * 获取 Windsurf 数据库路径
    */
   static getDBPath() {
     const platform = process.platform;
     
     if (platform === 'win32') {
-      return path.join(app.getPath('appData'), 'Windsurf/User/globalStorage/state.vscdb');
+      return path.join(this.getAppDataDir(), 'Windsurf/User/globalStorage/state.vscdb');
     } else if (platform === 'darwin') {
-      return path.join(app.getPath('home'), 'Library/Application Support/Windsurf/User/globalStorage/state.vscdb');
+      return path.join(this.getHomeDir(), 'Library/Application Support/Windsurf/User/globalStorage/state.vscdb');
     } else if (platform === 'linux') {
-      return path.join(app.getPath('home'), '.config/Windsurf/User/globalStorage/state.vscdb');
+      return path.join(this.getHomeDir(), '.config/Windsurf/User/globalStorage/state.vscdb');
     }
     
     throw new Error(`不支持的平台: ${platform}`);
@@ -34,11 +78,11 @@ class WindsurfPathDetector {
     const platform = process.platform;
     
     if (platform === 'win32') {
-      return path.join(app.getPath('appData'), 'Windsurf');
+      return path.join(this.getAppDataDir(), 'Windsurf');
     } else if (platform === 'darwin') {
-      return path.join(app.getPath('home'), 'Library/Application Support/Windsurf');
+      return path.join(this.getHomeDir(), 'Library/Application Support/Windsurf');
     } else if (platform === 'linux') {
-      return path.join(app.getPath('home'), '.config/Windsurf');
+      return path.join(this.getHomeDir(), '.config/Windsurf');
     }
   }
   
@@ -56,6 +100,71 @@ class WindsurfPathDetector {
   }
   
   /**
+   * 启动 Windsurf
+   */
+  static async startWindsurf() {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    try {
+      console.log('[启动 Windsurf] 开始启动...');
+      
+      if (process.platform === 'win32') {
+        // Windows: 启动 Windsurf.exe
+        try {
+          // 方法1: 从开始菜单启动
+          await execAsync('start "" "Windsurf"', { shell: 'cmd.exe' });
+          console.log('[启动 Windsurf] Windows: 已从开始菜单启动');
+        } catch (error) {
+          // 方法2: 从常见安装路径启动
+          const commonPaths = [
+            '%LOCALAPPDATA%\\Programs\\Windsurf\\Windsurf.exe',
+            '%PROGRAMFILES%\\Windsurf\\Windsurf.exe',
+            '%PROGRAMFILES(X86)%\\Windsurf\\Windsurf.exe'
+          ];
+          
+          let started = false;
+          for (const exePath of commonPaths) {
+            try {
+              await execAsync(`start "" "${exePath}"`, { shell: 'cmd.exe' });
+              console.log(`[启动 Windsurf] Windows: 已从 ${exePath} 启动`);
+              started = true;
+              break;
+            } catch {
+              // 继续尝试下一个路径
+            }
+          }
+          
+          if (!started) {
+            throw new Error('无法找到 Windsurf 安装路径');
+          }
+        }
+        
+      } else if (process.platform === 'darwin') {
+        // macOS: 使用 open 命令启动
+        await execAsync('open -a Windsurf');
+        console.log('[启动 Windsurf] macOS: 已启动');
+        
+      } else {
+        // Linux: 尝试从命令行启动
+        try {
+          await execAsync('windsurf &');
+          console.log('[启动 Windsurf] Linux: 已启动');
+        } catch (error) {
+          throw new Error('无法启动 Windsurf，请手动启动');
+        }
+      }
+      
+      console.log('[启动 Windsurf] ✅ 启动成功');
+      return true;
+    } catch (error) {
+      console.error('[启动 Windsurf] 错误:', error);
+      throw error;
+    }
+  }
+  
+  /**
    * 检查 Windsurf 是否正在运行
    */
   static async isRunning() {
@@ -69,7 +178,8 @@ class WindsurfPathDetector {
         return stdout.toLowerCase().includes('windsurf.exe');
       } else if (process.platform === 'darwin') {
         try {
-          const { stdout } = await execAsync('pgrep -f "Windsurf.app/Contents/MacOS/Windsurf"');
+          // 使用更宽松的匹配，检测任何 Windsurf 相关进程
+          const { stdout } = await execAsync('pgrep -f "Windsurf"');
           return stdout.trim().length > 0;
         } catch {
           // pgrep 返回非0表示没找到进程
@@ -477,7 +587,17 @@ class AccountSwitcher {
       log('[切号] ========== 切换账号成功 ==========');
       log(`[切号] 当前账号: ${account.email}`);
       log(`[切号] 用户名: ${name}`);
-      log('[切号] 请启动 Windsurf 查看效果');
+      
+      // 12. 自动启动 Windsurf
+      log('[切号] 正在启动 Windsurf...');
+      try {
+        await WindsurfPathDetector.startWindsurf();
+        log('[切号] ✅ Windsurf 已启动');
+        log('[切号] 请等待 Windsurf 完全启动后查看效果');
+      } catch (error) {
+        log(`[切号] ⚠️ 自动启动失败: ${error.message}`);
+        log('[切号] 请手动启动 Windsurf 查看效果');
+      }
       
       return {
         success: true,
