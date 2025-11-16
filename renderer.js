@@ -193,33 +193,15 @@ function showSponsorPopup() {
         <div style="padding: 48px 40px 40px;">
           <!-- 图标和标题 -->
           <div style="text-align: center; margin-bottom: 32px;">
+            <!-- 跪求表情包 -->
             <div style="
-              display: inline-flex;
-              align-items: center;
-              justify-content: center;
-              width: 80px;
-              height: 80px;
-              background: linear-gradient(135deg, #ff9500, #ff3b30);
-              border-radius: 50%;
-              margin-bottom: 20px;
-              box-shadow: 0 12px 32px rgba(255, 59, 48, 0.35);
-              position: relative;
-              animation: heartbeat 2s ease-in-out infinite;
-            ">
-              <i data-lucide="heart" style="width: 40px; height: 40px; color: white;"></i>
-              <!-- 光晕效果 -->
-              <div style="
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                border-radius: 50%;
-                background: linear-gradient(135deg, #ff9500, #ff3b30);
-                opacity: 0.3;
-                animation: pulse 2s ease-in-out infinite;
-              "></div>
-            </div>
+              font-size: 72px;
+              margin-bottom: 16px;
+              animation: bounce 1.5s ease-in-out infinite;
+              display: inline-block;
+            ">🙏</div>
             <h3 style="
-              margin: 0 0 12px 0;
+              margin: 0 0 8px 0;
               font-size: 26px;
               font-weight: 800;
               background: linear-gradient(135deg, #ff9500, #ff3b30);
@@ -227,13 +209,13 @@ function showSponsorPopup() {
               -webkit-text-fill-color: transparent;
               background-clip: text;
               letter-spacing: -0.5px;
-            ">感谢您的支持</h3>
+            ">求求了，给个赞助吧！</h3>
             <p style="
               margin: 0;
               font-size: 13px;
               color: #86868b;
               font-weight: 500;
-            ">让我们一起让工具变得更好</p>
+            ">开发者已经跪下了 🧎‍♂️</p>
           </div>
           
           <!-- 特性卡片 -->
@@ -346,19 +328,18 @@ function showSponsorPopup() {
           transform: translateY(0) scale(1);
         }
       }
-      @keyframes heartbeat {
-        0%, 100% { transform: scale(1); }
-        10% { transform: scale(1.1); }
-        20% { transform: scale(1); }
-      }
-      @keyframes pulse {
+      @keyframes bounce {
         0%, 100% { 
-          transform: scale(1);
-          opacity: 0.3;
+          transform: translateY(0) scale(1);
+        }
+        25% { 
+          transform: translateY(-15px) scale(1.05);
         }
         50% { 
-          transform: scale(1.3);
-          opacity: 0;
+          transform: translateY(0) scale(1);
+        }
+        75% { 
+          transform: translateY(-8px) scale(1.02);
         }
       }
       @keyframes gradientMove {
