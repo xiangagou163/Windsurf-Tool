@@ -1,5 +1,6 @@
 // renderer.js - 渲染进程脚本
-const { ipcRenderer } = require('electron');
+// 将 ipcRenderer 挂载到 window 对象，供全局使用
+window.ipcRenderer = require('electron').ipcRenderer;
 
 // 加载 lucide 图标库
 try {
