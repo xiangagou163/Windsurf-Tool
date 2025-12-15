@@ -44,16 +44,16 @@ const FilePathManager = {
           platformInfoEl.textContent = platformMap[paths.platform] || paths.platform;
         }
         
-        console.log('✅ 配置文件路径加载成功');
+        console.log('配置文件路径加载成功');
         return { success: true, paths };
       } else {
-        console.error('❌ 加载配置文件路径失败:', result.error);
-        alert('加载配置文件路径失败: ' + result.error);
+        console.error('加载配置文件路径失败:', result.error);
+        showCustomAlert('加载配置文件路径失败: ' + result.error, 'error');
         return { success: false, error: result.error };
       }
     } catch (error) {
-      console.error('❌ 加载配置文件路径失败:', error);
-      alert('加载配置文件路径失败: ' + error.message);
+      console.error('加载配置文件路径失败:', error);
+      showCustomAlert('加载配置文件路径失败: ' + error.message, 'error');
       return { success: false, error: error.message };
     }
   },
@@ -90,7 +90,7 @@ const FilePathManager = {
       }, 1500);
     }
     
-    console.log('✅ 路径已复制到剪贴板:', input.value);
+    console.log('路径已复制到剪贴板:', input.value);
   },
   
   /**
@@ -105,16 +105,16 @@ const FilePathManager = {
     
     const pathValue = input.value;
     if (!pathValue) {
-      alert('路径为空，无法打开');
+      showCustomAlert('路径为空，无法打开', 'warning');
       return;
     }
     
     try {
       await shell.openPath(pathValue);
-      console.log('✅ 已打开文件夹:', pathValue);
+      console.log('已打开文件夹:', pathValue);
     } catch (error) {
       console.error('打开文件夹失败:', error);
-      alert('打开文件夹失败: ' + error.message);
+      showCustomAlert('打开文件夹失败: ' + error.message, 'error');
     }
   },
   
@@ -130,16 +130,16 @@ const FilePathManager = {
     
     const filePath = input.value;
     if (!filePath) {
-      alert('文件路径为空，无法打开');
+      showCustomAlert('文件路径为空，无法打开', 'warning');
       return;
     }
     
     try {
       shell.showItemInFolder(filePath);
-      console.log('✅ 已打开文件:', filePath);
+      console.log('已打开文件:', filePath);
     } catch (error) {
       console.error('打开文件失败:', error);
-      alert('打开文件失败: ' + error.message);
+      showCustomAlert('打开文件失败: ' + error.message, 'error');
     }
   }
 };

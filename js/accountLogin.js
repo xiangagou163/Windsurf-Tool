@@ -5,6 +5,7 @@
  */
 
 const axios = require('axios');
+const CONSTANTS = require('./constants');
 
 class AccountLogin {
   constructor() {
@@ -30,8 +31,8 @@ class AccountLogin {
    */
   async loginWithEmailPassword(email, password) {
     try {
-      const FIREBASE_API_KEY = 'AIzaSyDsOl-1XpT5err0Tcnx8FFod1H8gVGIycY';
-      const WORKER_URL = 'https://jolly-leaf-328a.92xh6jhdym.workers.dev/login';
+      const FIREBASE_API_KEY = CONSTANTS.FIREBASE_API_KEY;
+      const WORKER_URL = `${CONSTANTS.WORKER_URL}/login`;
       
       const response = await axios.post(
         WORKER_URL,
@@ -44,8 +45,9 @@ class AccountLogin {
           headers: {
             'Content-Type': 'application/json',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            // 'X-Secret-Key': CONSTANTS.WORKER_SECRET_KEY  // 已禁用密钥验证
           },
-          timeout: 30000
+          timeout: CONSTANTS.REQUEST_TIMEOUT
         }
       );
       
@@ -57,12 +59,21 @@ class AccountLogin {
         localId: response.data.localId
       };
     } catch (error) {
+      // 尝试打印代理环境变量
+      const proxyEnv = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
+      if (proxyEnv) {
+        this.log(`   当前环境变量代理: ${proxyEnv}`);
+      } else {
+        this.log(`   提示: 未检测到 Node.js 代理环境变量 (HTTPS_PROXY/HTTP_PROXY)`);
+      }
+
       // 判断是否为网络连接问题
       if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
-        this.log('❌ 无法连接到中转服务器');
+        this.log('无法连接到中转服务器');
         this.log('   错误: 网络连接失败');
-        this.log('   建议: 请检查网络连接是否正常');
-        throw new Error('无法连接到中转服务器，请检查网络连接');
+        this.log('   建议: 请检查网络连接，或开启 VPN/全局代理');
+        this.log('   注意: 请确保网络可以访问 workers.dev');
+        throw new Error('无法连接到中转服务器，请检查网络连接或开启代理');
       }
       
       // 其他错误（如密码错误、账号不存在等）
@@ -84,7 +95,7 @@ class AccountLogin {
         friendlyMessage = '邮箱格式不正确';
       }
       
-      this.log(`❌ Firebase 登录失败: ${friendlyMessage}`);
+      this.log(`Firebase 登录失败: ${friendlyMessage}`);
       throw new Error(friendlyMessage);
     }
   }
@@ -114,7 +125,7 @@ class AccountLogin {
       
       return accountInfo;
     } catch (error) {
-      this.log(`❌ 获取账号信息失败`);
+      this.log(`获取账号信息失败`);
       this.log(`   错误: ${error.message}`);
       throw error;
     }
@@ -144,16 +155,24 @@ class AccountLogin {
         apiServerUrl: response.data.api_server_url
       };
     } catch (error) {
+      // 尝试打印代理环境变量
+      const proxyEnv = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy;
+      if (proxyEnv) {
+        this.log(`   当前环境变量代理: ${proxyEnv}`);
+      } else {
+        this.log(`   提示: 未检测到 Node.js 代理环境变量 (HTTPS_PROXY/HTTP_PROXY)`);
+      }
+
       // 判断是否为网络连接问题
       if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
-        this.log('❌ 无法连接到服务器');
+        this.log('无法连接到服务器');
         this.log('   错误: 网络连接失败');
         this.log('   建议: 请检查网络连接');
         throw new Error('无法连接到 Windsurf 服务器，请检查网络连接');
       }
       
       const errorMessage = error.response?.data?.error?.message || error.message;
-      this.log(`❌ 获取 API Key 失败: ${errorMessage}`);
+      this.log(`获取 API Key 失败: ${errorMessage}`);
       throw new Error(errorMessage);
     }
   }

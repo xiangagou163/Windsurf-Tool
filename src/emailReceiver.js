@@ -16,7 +16,36 @@ class EmailReceiver {
   }
 
   /**
-   * 获取验证码（优化的IMAP实现）
+   * 获取所有可用的邮箱列表（用于检测垃圾箱）
+   */
+  async getMailboxList(imap) {
+    return new Promise((resolve) => {
+      imap.getBoxes((err, boxes) => {
+        if (err) {
+          this.log(`获取邮箱列表失败: ${err.message}`);
+          resolve([]);
+          return;
+        }
+        
+        const boxNames = [];
+        const extractBoxNames = (boxes, prefix = '') => {
+          for (const name in boxes) {
+            const fullName = prefix ? `${prefix}${boxes[name].delimiter || '/'}${name}` : name;
+            boxNames.push(fullName);
+            if (boxes[name].children) {
+              extractBoxNames(boxes[name].children, fullName);
+            }
+          }
+        };
+        
+        extractBoxNames(boxes);
+        resolve(boxNames);
+      });
+    });
+  }
+
+  /**
+   * 获取验证码（优化的IMAP实现，支持垃圾箱）
    */
   async getVerificationCode(targetEmail, maxWaitTime = 120000) {
     return new Promise((resolve, reject) => {
@@ -43,7 +72,8 @@ class EmailReceiver {
 
       let checkInterval;
       let isResolved = false;
-      let boxOpened = false;
+      let currentBox = null; // 当前打开的邮箱
+      let junkBoxChecked = false; // 是否已检查过垃圾箱
       const processedEmails = new Set(); // 记录已处理的邮件ID
 
       // 清理资源
@@ -212,6 +242,71 @@ class EmailReceiver {
         return false;
       };
 
+      // 切换到下一个邮箱（垃圾箱）
+      const switchToNextBox = async () => {
+        if (isResolved || junkBoxChecked) return;
+        
+        this.log('收件箱未找到验证码，尝试检查垃圾箱...');
+        junkBoxChecked = true;
+        
+        try {
+          // 获取所有邮箱列表
+          const allBoxes = await this.getMailboxList(imap);
+          this.log(`可用邮箱: ${allBoxes.join(', ')}`);
+          
+          // 查找垃圾箱（兼容多种命名）
+          const junkBoxNames = [
+            'Junk',           // 标准命名
+            'Spam',           // Gmail
+            'Deleted Messages', // QQ邮箱
+            'Trash',          // 某些邮箱
+            'Bulk Mail',      // Outlook
+            '[Gmail]/Spam',   // Gmail IMAP
+            'INBOX.Junk',     // 某些IMAP服务器
+            'INBOX.Spam'
+          ];
+          
+          let junkBox = null;
+          for (const boxName of allBoxes) {
+            const lowerBoxName = boxName.toLowerCase();
+            if (junkBoxNames.some(junk => lowerBoxName.includes(junk.toLowerCase()))) {
+              junkBox = boxName;
+              break;
+            }
+          }
+          
+          if (!junkBox) {
+            this.log('未找到垃圾箱，继续等待收件箱...');
+            return;
+          }
+          
+          this.log(`找到垃圾箱: ${junkBox}`);
+          
+          // 关闭当前邮箱
+          imap.closeBox((err) => {
+            if (err) {
+              this.log(`关闭收件箱失败: ${err.message}`);
+            }
+            
+            // 打开垃圾箱
+            imap.openBox(junkBox, false, (err, box) => {
+              if (err) {
+                this.log(`打开垃圾箱失败: ${err.message}`);
+                return;
+              }
+              
+              currentBox = junkBox;
+              this.log(`已切换到垃圾箱: ${junkBox}`);
+              
+              // 立即检查垃圾箱中的邮件
+              checkMail();
+            });
+          });
+        } catch (error) {
+          this.log(`切换垃圾箱失败: ${error.message}`);
+        }
+      };
+
       // 检查邮件
       const checkMail = () => {
         if (isResolved) return;
@@ -227,7 +322,7 @@ class EmailReceiver {
           return;
         }
 
-        if (!boxOpened) {
+        if (!currentBox) {
           this.log('等待邮箱打开...');
           return;
         }
@@ -242,6 +337,14 @@ class EmailReceiver {
           }
 
           if (!results || results.length === 0) {
+            // 如果收件箱没有邮件且未检查垃圾箱，则切换到垃圾箱
+            if (currentBox === 'INBOX' && !junkBoxChecked) {
+              const elapsedTime = Date.now() - startTime;
+              // 在收件箱等待30秒后，如果还没找到，就检查垃圾箱
+              if (elapsedTime > 30000) {
+                switchToNextBox();
+              }
+            }
             return;
           }
           
@@ -370,7 +473,7 @@ class EmailReceiver {
       imap.once('ready', () => {
         this.log('IMAP 连接成功');
         
-        // 打开收件箱（只打开一次）
+        // 打开收件箱（优先检查）
         imap.openBox('INBOX', false, (err, box) => {
           if (err) {
             cleanup();
@@ -381,10 +484,11 @@ class EmailReceiver {
             return;
           }
           
-          boxOpened = true;
-          this.log('邮箱已打开，开始监听验证码邮件...');
+          currentBox = 'INBOX';
+          this.log('收件箱已打开，开始监听验证码邮件...');
           this.log(`目标邮箱: ${targetEmail}`);
           this.log(`最大等待时间: ${maxWaitTime/1000} 秒`);
+          this.log('提示: 如果收件箱30秒内未找到，将自动检查垃圾箱');
           
           // 立即检查一次
           checkMail();

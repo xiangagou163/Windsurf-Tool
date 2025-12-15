@@ -420,7 +420,7 @@ const TokenGetter = {
               statusBadge.style.color = '#856404';
               statusBadge.style.border = '1px solid #ffeaa7';
             } else {
-              statusBadge.textContent = '✓';
+              statusBadge.textContent = '';
               statusBadge.style.backgroundColor = '#d4edda';
               statusBadge.style.color = '#155724';
               statusBadge.style.border = '1px solid #c3e6cb';
@@ -503,13 +503,6 @@ const TokenGetter = {
             updateAccountsUsage();
           }
         }, 1000);
-        
-        // 自动检测当前账号
-        setTimeout(() => {
-          if (typeof updateAccountListWithCurrent === 'function') {
-            updateAccountListWithCurrent();
-          }
-        }, 1500);
       } else {
         // 显示占位符
         this.elements.accountList.innerHTML = `

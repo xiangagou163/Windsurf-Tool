@@ -4,24 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' *; frame-src *; img-src * data:; connect-src *; font-src *;">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <title>Windsurf-Tool 4.4.1</title>
+  <script src="./node_modules/lucide/dist/umd/lucide.min.js"></script>
+  <title>Windsurf-Tool 6.4.1</title>
   <style>
+    /* --- 全局变量 --- */
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --bg-body: #f8fafc;
+      --bg-sidebar: rgba(255, 255, 255, 0.95);
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 16px;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
-      background: #f0f0f5;
-      font-size: 13px;
-      color: #1d1d1f;
-      line-height: 1.47059;
-      min-height: 100vh;
+      font-family: var(--font-family);
+      background: var(--bg-body);
+      font-size: 14px;
+      color: var(--text-main);
+      line-height: 1.5;
+      height: 100vh;
       overflow: hidden;
     }
+
+    /* 账号管理视图使用紧凑字体 */
+    #register { font-size: 13px; }
 
     .app-container {
       display: flex;
@@ -32,83 +56,83 @@
     /* 左侧导航栏 */
     .sidebar {
       width: 240px;
-      background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-      border-right: 1px solid #e5e5ea;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+      z-index: 50;
     }
 
     .sidebar-header {
       padding: 20px;
-      border-bottom: 1px solid #e5e5ea;
+      border-bottom: 1px solid transparent;
+      -webkit-app-region: drag; /* Windows 拖动区域 */
+    }
+    
+    .sidebar-header * {
+      -webkit-app-region: no-drag; /* 按钮等元素不可拖动 */
     }
 
     .app-logo {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
+      gap: 10px;
+      margin-bottom: 6px;
     }
 
     .app-logo-icon {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #007aff, #5ac8fa);
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 20px;
-      font-weight: 600;
+      overflow: hidden;
+    }
+    
+    .app-logo-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     .app-logo-text {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1d1d1f;
-      line-height: 1;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
     }
 
     .app-version {
       font-size: 11px;
-      color: #86868b;
-      padding-left: 48px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+      color: var(--text-muted);
+      padding-left: 42px;
     }
 
     .free-badge {
-      background: linear-gradient(135deg, #34c759, #30d158);
-      color: white;
+      background: rgba(34, 197, 94, 0.1);
+      color: #16a34a;
       font-size: 10px;
       font-weight: 600;
       padding: 2px 8px;
-      border-radius: 10px;
-      letter-spacing: 0.5px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 197, 94, 0.2);
     }
 
     .sidebar-nav {
       flex: 1;
-      padding: 12px 8px;
+      padding: 12px;
       overflow-y: auto;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       padding: 10px 12px;
       margin-bottom: 4px;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       cursor: pointer;
-      transition: all 0.2s ease;
-      color: #1d1d1f;
+      transition: all 0.2s;
+      color: var(--text-muted);
       font-size: 13px;
-      font-weight: 400;
+      font-weight: 500;
       border: none;
       background: transparent;
       width: 100%;
@@ -116,35 +140,35 @@
     }
 
     .nav-item:hover {
-      background: #f5f5f7;
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--text-main);
     }
 
     .nav-item.active {
-      background: #007aff;
-      color: white;
-      font-weight: 500;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 600;
     }
 
     .nav-item-icon {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       flex-shrink: 0;
     }
 
     .nav-item.active .nav-item-icon {
-      color: white;
+      color: var(--primary);
     }
-
 
     .sidebar-footer {
       padding: 16px;
-      background: #fafafa;
+      border-top: 1px solid var(--border);
     }
 
     .footer-links {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
     }
 
     .footer-link {
@@ -152,11 +176,11 @@
       align-items: center;
       gap: 8px;
       font-size: 12px;
-      color: #007aff;
+      color: var(--text-muted);
       text-decoration: none;
       padding: 6px 8px;
-      border-radius: 6px;
-      transition: background 0.2s ease;
+      border-radius: var(--radius-md);
+      transition: all 0.2s;
       border: none;
       background: transparent;
       width: 100%;
@@ -165,12 +189,14 @@
     }
 
     .footer-link:hover {
-      background: #f5f5f7;
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--text-main);
     }
 
     .footer-link-icon {
       width: 16px;
       height: 16px;
+      color: var(--text-muted);
     }
 
     /* 右侧主内容区 */
@@ -178,50 +204,626 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      background: #ffffff;
+      background: var(--bg-body);
       overflow: hidden;
+      position: relative;
     }
 
     .content-header {
       padding: 24px 32px;
-      border-bottom: 1px solid #e5e5ea;
-      background: #fafafa;
+      background: rgba(248, 250, 252, 0.8);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
     }
 
     .content-title {
-      font-size: 24px;
-      font-weight: 600;
-      color: #1d1d1f;
-      margin-bottom: 8px;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
       display: flex;
       align-items: center;
       gap: 12px;
+      letter-spacing: -0.5px;
     }
 
     .content-title-icon {
       width: 28px;
       height: 28px;
-      color: #007aff;
+      color: var(--primary);
     }
 
     .content-subtitle {
-      font-size: 13px;
-      color: #86868b;
-      line-height: 1.5;
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-left: 40px;
     }
 
     .content-body {
       flex: 1;
-      padding: 24px 32px;
+      padding: 24px 32px 32px 32px;
       overflow-y: auto;
     }
 
     .view-content {
       display: none;
+      height: 100%;
+      flex-direction: column;
+      animation: fadeIn 0.2s ease;
     }
 
     .view-content.active {
+      display: flex;
+    }
+
+    /* 设置、教程、自动绑卡视图使用block布局 */
+    #settings.view-content.active,
+    #tutorial.view-content.active,
+    #autoBindCard.view-content.active {
       display: block;
+      overflow-y: auto;
+      padding: 32px 40px;
+    }
+
+    /* 设置页面样式 */
+    #settings .settings-wrapper,
+    #autoBindCard .settings-wrapper {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* 教程页面样式 */
+    #tutorial .tutorial-article {
+      max-width: 720px;
+      margin: 0 auto;
+      font-size: 14px;
+    }
+
+    /* === 紧凑顶部栏 (Compact Header) === */
+    .compact-header {
+      flex-shrink: 0;
+      background: #ffffff;
+      border-bottom: 1px solid #f5f5f5;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      z-index: 20;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 当前登录状态 - 简洁版 */
+    .current-login-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+    }
+    
+    /* 状态指示点 */
+    .login-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34c759;
+      flex-shrink: 0;
+    }
+    .login-status-dot.offline {
+      background: #8e8e93;
+    }
+    
+    /* 登录信息 */
+    .login-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .login-email {
+      color: var(--text-main);
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .login-type-tag {
+      color: #86868b;
+    }
+    
+    /* 分隔线 */
+    .login-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+    }
+    
+    /* 积分区域 */
+    .credits-section {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .credits-label {
+      color: #86868b;
+    }
+    .credits-used-num {
+      color: #86868b;
+    }
+    .credits-slash {
+      color: #c7c7cc;
+    }
+    .credits-total-num {
+      color: #86868b;
+    }
+    
+    /* 进度条 - 隐藏 */
+    .credits-progress-wrapper {
+      display: none;
+    }
+    .credits-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #34c759 0%, #ffcc00 50%, #ff9500 75%, #ff3b30 100%);
+      transition: width 0.5s ease;
+      border-radius: 0 2px 2px 0;
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 工具栏输入框 */
+    .toolbar-input-group {
+      display: flex;
+      align-items: center;
+      background: #f1f5f9;
+      border-radius: var(--radius-md);
+      padding: 2px;
+      border: 1px solid var(--border);
+    }
+    .toolbar-input-group .mini-input {
+      width: 50px;
+      background: transparent;
+      border: none;
+      font-size: 12px;
+      text-align: center;
+      padding: 4px;
+      color: var(--text-main);
+    }
+    .toolbar-input-group .mini-input:focus { outline: none; }
+    .input-divider { width: 1px; height: 16px; background: #cbd5e1; }
+
+    /* 紧凑按钮 */
+    .compact-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      height: 32px;
+      white-space: nowrap;
+    }
+    .compact-btn-primary { background: var(--primary); color: white; }
+    .compact-btn-primary:hover { background: var(--primary-hover); }
+    
+    .compact-btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .compact-btn-ghost:hover { background: #f8fafc; color: var(--text-main); border-color: #cbd5e1; }
+    
+    .compact-btn-danger { color: #ef4444; border: 1px solid var(--border); background: transparent; }
+    .compact-btn-danger:hover { background: #fef2f2; border-color: #fecaca; }
+
+    .icon-only-btn { padding: 6px; width: 32px; justify-content: center; }
+
+    /* === 账号列表区域 === */
+    .grid-container {
+      flex: 1;
+      padding: 0;
+      overflow: hidden;
+      background: var(--bg-body);
+      position: relative;
+    }
+
+    /* 列表内按钮 */
+    .table-action-btn {
+      padding: 4px;
+      border-radius: 4px;
+      color: var(--text-muted);
+      border: none; 
+      background: transparent; 
+      cursor: pointer;
+    }
+    .table-action-btn:hover { background: #e2e8f0; color: var(--text-main); }
+    .table-action-btn.delete:hover { background: #fee2e2; color: #ef4444; }
+
+    /* 文章样式 */
+    .tutorial-article {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.8;
+      color: #333;
+    }
+    .tutorial-article h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1d1d1f;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .tutorial-article h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin: 32px 0 16px 0;
+    }
+    .tutorial-article h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #444;
+      margin: 20px 0 10px 0;
+    }
+    .tutorial-article p {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 12px;
+    }
+    .tutorial-article ul, .tutorial-article ol {
+      font-size: 14px;
+      color: #555;
+      margin: 0 0 16px 20px;
+      padding: 0;
+    }
+    .tutorial-article li {
+      margin-bottom: 6px;
+    }
+    .tutorial-article code {
+      background: #f5f5f7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: "SF Mono", Monaco, monospace;
+      font-size: 13px;
+      color: #007aff;
+    }
+    .tutorial-article blockquote {
+      margin: 16px 0;
+      padding: 12px 16px;
+      background: #f9f9f9;
+      border-left: 3px solid #007aff;
+      font-size: 13px;
+      color: #666;
+      border-radius: 0 8px 8px 0;
+    }
+    .tutorial-article a {
+      color: #007aff;
+      text-decoration: none;
+    }
+    .tutorial-article a:hover {
+      text-decoration: underline;
+    }
+    .tutorial-article section {
+      margin-bottom: 24px;
+    }
+    .tutorial-article strong {
+      color: #1d1d1f;
+    }
+
+    /* --- 设置页面专属优化样式 --- */
+    .settings-wrapper {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .settings-section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      margin-left: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .settings-card-new {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      transition: box-shadow 0.2s;
+    }
+    
+    .settings-card-new:hover {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border-color: #cbd5e1;
+    }
+
+    .setting-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    .setting-full-row {
+      width: 100%;
+    }
+
+    .setting-input-wrapper {
+      position: relative;
+    }
+
+    .setting-input-wrapper input,
+    .setting-input-wrapper select,
+    .setting-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      background: #fff;
+      transition: all 0.2s;
+      color: var(--text-main);
+    }
+
+    .setting-input-wrapper input:focus,
+    .setting-input-wrapper select:focus,
+    .setting-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      background: #fafbff;
+    }
+
+    .setting-input::placeholder {
+      color: #94a3b8;
+    }
+
+    .setting-input:hover:not(:focus) {
+      border-color: #cbd5e1;
+    }
+
+    /* 优化的输入框样式 */
+    .input-modern {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 13px;
+      background: linear-gradient(to bottom, #fafbfc, #ffffff);
+      transition: all 0.2s ease;
+      color: #1e293b;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .input-modern:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), 0 1px 2px rgba(0, 0, 0, 0.04);
+      background: #ffffff;
+    }
+
+    .input-modern::placeholder {
+      color: #94a3b8;
+    }
+
+    .input-modern:hover:not(:focus) {
+      border-color: #cbd5e1;
+      background: #ffffff;
+    }
+
+    /* input 输入框确保无背景图 */
+    input.setting-input,
+    input.input-modern {
+      background-image: none !important;
+    }
+
+    /* select 下拉框优化 */
+    select.setting-input,
+    select.input-modern {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-color: #fff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat !important;
+      background-position: right 12px center;
+      background-size: 12px;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+
+    select.setting-input:focus,
+    select.input-modern:focus {
+      background-color: #fafbff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat !important;
+      background-position: right 12px center;
+      background-size: 12px;
+    }
+
+    .setting-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .setting-helper {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .tags-container {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 48px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .path-display-group {
+      margin-bottom: 16px;
+    }
+    .path-display-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .path-input-readonly {
+      width: 100%;
+      padding: 10px 12px;
+      background-color: #f1f5f9 !important;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 11px !important;
+      color: #475569 !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 8px;
+      cursor: text;
+      user-select: all;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .platform-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      background: linear-gradient(135deg, #007aff, #5ac8fa);
+      color: white;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0, 113, 227, 0.2);
+    }
+    
+    .domain-tag {
+      background: white;
+      color: var(--text-main);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .domain-tag button {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    .domain-tag button:hover { color: #ef4444; }
+
+    .save-config-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s ease;
+      z-index: 100;
+    }
+    .save-config-btn:hover {
+      background: #059669;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+    }
+
+    /* 统一控制面板 */
+    .unified-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .panel-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .current-account-info {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .panel-stats {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+    }
+    .panel-stats span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .panel-stats b {
+      font-weight: 600;
+    }
+    .panel-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .form-group {
@@ -234,118 +836,128 @@
       margin-bottom: 8px;
       font-weight: 500;
       font-size: 13px;
-      color: #1d1d1f;
+      color: var(--text-main);
     }
 
     .form-group input,
     .form-group select,
     .form-group textarea {
       width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #d2d2d7;
-      border-radius: 6px;
-      font-size: 13px;
-      background: #ffffff;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      background: #f8fafc;
       font-family: inherit;
+      color: var(--text-main);
+      transition: all 0.2s;
     }
 
     .form-group input:focus,
     .form-group select:focus,
     .form-group textarea:focus {
       outline: none;
-      border-color: #007aff;
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+      background: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     .btn {
-      padding: 7px 16px;
-      border: none;
-      border-radius: 6px;
+      padding: 9px 18px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-md);
       font-size: 13px;
-      font-weight: 400;
+      font-weight: 500;
+      letter-spacing: 0.3px;
       cursor: pointer;
       margin-right: 8px;
       font-family: inherit;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
     }
 
     .btn-primary {
-      background: #007aff;
+      background: var(--primary);
       color: white;
     }
 
     .btn-primary:hover {
-      background: #0051d5;
+      background: var(--primary-hover);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
     }
 
     .btn-primary:active {
-      background: #004fc4;
+      background: #1e40af;
     }
 
     .btn-danger {
-      background: #ff3b30;
+      background: #ef4444;
       color: white;
     }
 
     .btn-danger:hover {
-      background: #e6342a;
+      background: #dc2626;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
     }
 
     .btn-danger:active {
-      background: #cc2e24;
+      background: #b91c1c;
     }
 
     .btn-success {
-      background: #34c759;
+      background: #10b981;
       color: white;
     }
 
     .btn-success:hover {
-      background: #2fb350;
+      background: #059669;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
     }
 
     .btn-success:active {
-      background: #2a9f47;
+      background: #047857;
     }
 
     .btn-warning {
-      background: #ff9500;
+      background: #f59e0b;
       color: white;
     }
 
     .btn-warning:hover {
-      background: #e68600;
+      background: #d97706;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
     }
 
     .btn-warning:active {
-      background: #cc7700;
+      background: #b45309;
     }
 
 
-    /* 账号列表 - 卡片容器设计 */
+    /* 账号列表 - 自动填充剩余空间 */
     .accounts-grid {
+      height: 100%;
       width: 100%;
-      margin-top: 16px;
-      max-height: calc(100vh - 300px);
       overflow-y: auto;
       overflow-x: auto;
-      border: 1px solid #e5e5ea;
-      border-radius: 12px;
-      background: #ffffff;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      border: none;
+      background: var(--bg-card);
     }
 
     .account-item {
       display: flex;
       align-items: center;
-      padding: 10px 16px;
-      border-bottom: 1px solid #f0f0f0;
+      padding: 8px 16px;
+      border-bottom: none;
       font-size: 12px;
-      transition: all 0.15s ease;
-      min-height: 40px;
+      transition: background 0.1s;
+      min-height: 38px;
       background: transparent;
     }
 
@@ -354,34 +966,36 @@
     }
 
     .account-item:hover {
-      background: #f9f9fb;
+      background: #f1f5f9 !important;
+    }
+
+    /* 隔行变色 */
+    .account-item:nth-child(even):not(.header) {
+      background: #fafafa;
     }
 
     .account-item.header {
-      background: #fafafa;
-      font-weight: 600;
-      color: #6e6e73;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
       position: sticky;
       top: 0;
       z-index: 10;
-      border-bottom: 1px solid #e5e5ea;
-      border-radius: 12px 12px 0 0;
-      padding: 12px 16px;
-      min-height: 44px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 10px 16px;
+      min-height: 38px;
     }
 
     .account-item.header:hover {
-      background: #fafafa;
+      background: #ffffff !important;
     }
 
     /* 列定义 */
     .acc-col {
-      padding: 0 6px;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      padding: 0 8px;
+      overflow: visible;
       white-space: nowrap;
       display: flex;
       align-items: center;
@@ -397,33 +1011,38 @@
     }
 
     .acc-col-email {
-      width: 160px;
+      width: 200px;
+      min-width: 200px;
       flex-shrink: 0;
-      color: #1d1d1f;
+      color: var(--text-main);
       font-weight: 500;
       cursor: pointer;
       font-size: 12px;
     }
 
     .acc-col-email:hover {
-      color: #007aff;
+      color: var(--text-main);
     }
 
     .acc-col-password {
-      width: 90px;
+      width: 120px;
+      min-width: 120px;
       flex-shrink: 0;
       gap: 4px;
     }
 
     .password-display {
       font-family: 'SF Mono', Monaco, monospace;
-      color: #6e6e73;
+      color: var(--text-muted);
       font-size: 11px;
       cursor: pointer;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
     }
 
     .password-display:hover {
-      color: #1d1d1f;
+      color: var(--text-main);
     }
 
     .password-toggle {
@@ -496,6 +1115,32 @@
       font-size: 11px;
     }
 
+    .acc-col-note {
+      width: 100px;
+      flex-shrink: 0;
+      font-size: 11px;
+      color: #86868b;
+      cursor: pointer;
+    }
+    .acc-col-note:hover .note-text {
+      color: #007aff;
+    }
+    .acc-col-note .note-text {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .acc-col-note .note-input {
+      width: 100%;
+      padding: 2px 6px;
+      border: 1px solid #007aff;
+      border-radius: 4px;
+      font-size: 11px;
+      outline: none;
+      box-sizing: border-box;
+    }
+
     .acc-col-actions {
       flex: 1;
       min-width: 0;
@@ -524,24 +1169,31 @@
     .acc-btn-icon {
       padding: 4px;
       background: none;
-      border: none;
+      border: 1px solid transparent;
       border-radius: 4px;
       cursor: pointer;
       transition: all 0.15s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #6e6e73;
+      color: var(--text-muted);
       flex-shrink: 0;
       position: relative;
     }
 
     .acc-btn-icon:hover {
-      background: #e8e8ed;
+      background: white;
+      color: var(--primary);
+      border-color: var(--border);
+      box-shadow: var(--shadow-sm);
     }
 
     .acc-btn-icon:active {
-      background: #d1d1d6;
+      background: #f1f5f9;
+    }
+
+    .acc-btn-icon[data-tooltip="删除"]:hover {
+      color: #ef4444;
     }
 
     /* Tooltip 提示 */
@@ -622,7 +1274,7 @@
       height: 100%;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(15, 23, 42, 0.4);
       z-index: 1000;
       backdrop-filter: blur(4px);
       overflow-y: auto;
@@ -652,22 +1304,22 @@
     }
     
     .modal-dialog {
-      background: #ffffff;
-      border-radius: 12px;
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
       min-width: 400px;
       max-width: 500px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(0, 0, 0, 0.1);
-      animation: slideUp 0.3s ease;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
-    @keyframes slideUp {
+    @keyframes slideUpFade {
       from {
-        transform: translateY(20px);
+        transform: translateY(20px) scale(0.96);
         opacity: 0;
       }
       to {
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
         opacity: 1;
       }
     }
@@ -727,11 +1379,11 @@
     .context-menu-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
+      gap: 6px;
+      padding: 6px 12px;
       cursor: pointer;
-      transition: background 0.2s;
-      font-size: 14px;
+      transition: background 0.15s;
+      font-size: 12px;
       color: #1d1d1f;
     }
 
@@ -740,17 +1392,17 @@
     }
 
     .context-menu-item:first-child {
-      border-radius: 8px 8px 0 0;
+      border-radius: 6px 6px 0 0;
     }
 
     .context-menu-item:last-child {
-      border-radius: 0 0 8px 8px;
+      border-radius: 0 0 6px 6px;
     }
 
     .context-menu-divider {
       height: 1px;
       background: #e5e5ea;
-      margin: 4px 0;
+      margin: 2px 0;
     }
 
     /* 现代化弹窗样式 */
@@ -763,8 +1415,8 @@
       align-items: center;
       justify-content: space-between;
       padding: 20px 24px;
-      border-bottom: 1px solid #e5e5ea;
-      background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+      border-bottom: 1px solid var(--border);
+      background: #fff;
     }
 
     .modal-title-row {
@@ -812,6 +1464,36 @@
       padding: 24px;
     }
 
+    .modern-form-group {
+      margin-bottom: 16px;
+    }
+    .modern-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    .modern-input {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--background);
+      color: var(--text-main);
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+    .modern-input:focus {
+      outline: none;
+      border-color: #007aff;
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    }
+    .modern-input::placeholder {
+      color: #94a3b8;
+    }
+
     .form-tip {
       display: flex;
       align-items: center;
@@ -830,19 +1512,19 @@
       gap: 12px;
       justify-content: flex-end;
       padding: 16px 24px;
-      border-top: 1px solid #e5e5ea;
-      background: #fafafa;
+      border-top: 1px solid var(--border);
+      background: #f8fafc;
     }
 
     .btn-secondary {
-      background: #f5f5f7;
-      color: #1d1d1f;
-      border: 1px solid #d2d2d7;
+      background: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border);
     }
 
     .btn-secondary:hover {
-      background: #ebebf0;
-      border-color: #b8b8bd;
+      background: #f8fafc;
+      border-color: #cbd5e1;
     }
 
     .modal-header {
@@ -862,7 +1544,7 @@
     .progress-bar {
       width: 100%;
       height: 8px;
-      background: #e5e5ea;
+      background: var(--border);
       border-radius: 4px;
       overflow: hidden;
       margin-top: 12px;
@@ -870,9 +1552,10 @@
 
     .progress-fill {
       height: 100%;
-      background: #007aff;
+      background: linear-gradient(90deg, var(--primary), #60a5fa);
       border-radius: 4px;
       width: 0;
+      transition: width 0.3s ease;
     }
 
     .status-message {
@@ -884,21 +1567,21 @@
     }
 
     .status-success {
-      background: #d1f2dd;
-      color: #1d7324;
-      border: 1px solid #a6e7b8;
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
     }
 
     .status-error {
-      background: #ffd9d6;
-      color: #c41e3a;
-      border: 1px solid #ffb3ad;
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
     }
 
     .status-info {
-      background: #d1e7ff;
-      color: #0040dd;
-      border: 1px solid #a6d0ff;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
     }
 
     .domain-list {
@@ -909,19 +1592,19 @@
     }
 
     .domain-tag {
-      background: #f5f5f7;
-      color: #1d1d1f;
+      background: #f8fafc;
+      color: var(--text-main);
       padding: 6px 12px;
       border-radius: 6px;
       font-size: 13px;
       display: flex;
       align-items: center;
       gap: 8px;
-      border: 1px solid #e5e5ea;
+      border: 1px solid var(--border);
     }
 
     .domain-tag:hover {
-      background: #ebebf0;
+      background: #f1f5f9;
     }
 
     .domain-tag button {
@@ -942,7 +1625,7 @@
     h2 {
       font-size: 17px;
       font-weight: 600;
-      color: #1d1d1f;
+      color: var(--text-main);
       margin-bottom: 16px;
       margin-top: 24px;
     }
@@ -954,14 +1637,14 @@
     h3 {
       font-size: 15px;
       font-weight: 600;
-      color: #1d1d1f;
+      color: var(--text-main);
       margin-bottom: 12px;
       margin-top: 20px;
     }
 
     hr {
       border: none;
-      border-top: 1px solid #e5e5ea;
+      border-top: 1px solid var(--border);
       margin: 24px 0;
     }
 
@@ -970,8 +1653,13 @@
       gap: 24px;
       margin-bottom: 24px;
       flex-wrap: nowrap;
-      align-items: flex-end;
+      align-items: center;
       justify-content: space-between;
+      background: var(--bg-card);
+      padding: 16px 24px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
     }
 
     .action-group {
@@ -1005,12 +1693,14 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
-      color: #1d1d1f;
-      margin-bottom: 16px;
+      color: var(--text-main);
+      margin-bottom: 0;
+      margin-right: 24px;
       padding-bottom: 0;
-      border-bottom: none;
+      border: none;
+      padding: 0;
     }
 
     .batch-register-controls {
@@ -1038,28 +1728,30 @@
       gap: 6px;
       font-size: 12px;
       font-weight: 500;
-      color: #6e6e73;
+      color: var(--text-muted);
       margin-bottom: 6px;
     }
 
     .input-field input {
       width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #d1d1d6;
-      border-radius: 8px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
       font-size: 14px;
       transition: all 0.2s ease;
-      background: white;
+      background: #f8fafc;
+      color: var(--text-main);
     }
 
     .input-field input:focus {
       outline: none;
-      border-color: #007aff;
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+      background: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     .input-field input::placeholder {
-      color: #c7c7cc;
+      color: #94a3b8;
     }
 
     .batch-register-actions {
@@ -1164,18 +1856,18 @@
     }
 
     .settings-card {
-      background: white;
-      border: 1px solid #e5e5ea;
-      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
       padding: 0;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      box-shadow: var(--shadow-sm);
       transition: all 0.2s ease;
       display: flex;
       flex-direction: column;
     }
 
     .settings-card:hover {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: var(--shadow-md);
     }
 
     .settings-card.full-width {
@@ -1186,21 +1878,21 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 14px 18px;
-      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-      border-bottom: 1px solid #e5e5ea;
+      padding: 16px 24px;
+      background: linear-gradient(to right, #f8fafc, #fff);
+      border-bottom: 1px solid var(--border);
     }
 
     .settings-card-header i {
-      color: #007aff;
+      color: var(--primary);
       flex-shrink: 0;
     }
 
     .settings-card-header h3 {
       margin: 0;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 600;
-      color: #1d1d1f;
+      color: var(--text-main);
     }
 
     .settings-card-body {
@@ -1298,11 +1990,15 @@
 
     /* 批量注册弹窗 */
     .register-modal {
-      max-width: 800px;
+      max-width: 480px;
       width: 90%;
       max-height: 80vh;
       display: flex;
       flex-direction: column;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
 
     .register-modal-header {
@@ -1310,26 +2006,28 @@
       align-items: center;
       justify-content: space-between;
       padding: 20px 24px;
-      border-bottom: 1px solid #e5e5ea;
-      background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+      border-bottom: 1px solid var(--border);
+      background: #fff;
     }
 
     .register-modal-body {
       padding: 24px;
       flex: 1;
-      overflow: hidden;
+      min-height: 0;
+      overflow: visible;
       display: flex;
       flex-direction: column;
       gap: 16px;
+      background: #fff;
     }
 
     .register-stats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      padding: 12px;
-      background: #f5f5f7;
-      border-radius: 8px;
+      gap: 16px;
+      padding: 16px;
+      background: var(--bg-body);
+      border-radius: var(--radius-lg);
     }
 
     .register-stat-item {
@@ -1339,43 +2037,46 @@
     }
 
     .stat-label {
-      font-size: 11px;
-      color: #86868b;
+      font-size: 12px;
+      color: var(--text-muted);
       font-weight: 500;
     }
 
     .stat-value {
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 700;
-      color: #1d1d1f;
+      color: var(--text-main);
     }
 
     .stat-value.success {
-      color: #34c759;
+      color: #16a34a;
     }
 
     .stat-value.error {
-      color: #ff3b30;
+      color: #ef4444;
     }
 
     .register-log-container {
-      flex: 1;
-      background: #1e1e1e;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 1px solid #333;
+      flex: 0 0 auto;
+      height: 250px;
+      background: #0f172a;
+      border-radius: var(--radius-md);
+      overflow: visible;
+      border: 1px solid #334155;
       display: flex;
       flex-direction: column;
     }
 
     .register-log {
-      flex: 1;
-      overflow-y: auto;
+      height: 200px;
+      max-height: 200px;
+      overflow-y: scroll !important;
+      overflow-x: hidden;
       padding: 12px;
-      font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Consolas', monospace;
       font-size: 11px;
       line-height: 1.6;
-      color: #d4d4d4;
+      color: #e2e8f0;
     }
 
     .register-log::-webkit-scrollbar {
@@ -1426,7 +2127,7 @@
       justify-content: flex-end;
       gap: 12px;
       padding-top: 16px;
-      border-top: 1px solid #e5e5ea;
+      border-top: 1px solid var(--border);
     }
 
     /* 下拉菜单 */
@@ -1437,16 +2138,17 @@
 
     .dropdown-menu {
       position: absolute;
-      top: calc(100% + 4px);
+      top: calc(100% + 8px);
       left: 0;
       background: white;
-      border: 1px solid #e5e5ea;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
       min-width: 160px;
       z-index: 1000;
       display: none;
       overflow: hidden;
+      padding: 8px 0;
     }
 
     .dropdown-menu.show {
@@ -1461,19 +2163,19 @@
       cursor: pointer;
       transition: background 0.2s ease;
       font-size: 13px;
-      color: #1d1d1f;
+      color: var(--text-main);
     }
 
     .dropdown-item:hover {
-      background: #f5f5f7;
+      background: #f8fafc;
     }
 
     .dropdown-item:active {
-      background: #ebebf0;
+      background: #f1f5f9;
     }
 
     .dropdown-item i {
-      color: #007aff;
+      color: var(--primary);
     }
 
     /* 版本更新弹窗响应式样式 */
@@ -1511,106 +2213,209 @@
       line-height: 1.5;
     }
 
-    .stats-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
+    /* 紧凑型 Dashboard (新) */
+    .compact-dashboard {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 16px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
     }
 
-    .stat-card {
-      background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
-      padding: 20px;
-      border-radius: 12px;
-      border: 1px solid #e5e5ea;
-      min-height: 100px;
+    .compact-account-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .compact-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #60a5fa);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+      flex-shrink: 0;
+    }
+
+    .compact-details {
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      gap: 2px;
+      min-width: 0;
     }
 
-    .stat-card::before {
+    .compact-details h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compact-details p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 0;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .compact-details b {
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .compact-stats {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding-left: 24px;
+      border-left: 1px solid var(--border);
+    }
+
+    .compact-stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .compact-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text-main);
+    }
+
+    .compact-stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* 紧凑型 Toolbar (新) */
+    .compact-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      background: var(--bg-card);
+      padding: 8px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+
+    .compact-toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toolbar-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      padding-left: 8px;
+      padding-right: 4px;
+      display: flex;
+      align-items: center;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    .mini-input {
+      width: 70px;
+      padding: 6px 10px;
+      font-size: 13px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--bg-body);
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+    
+    .mini-input:focus {
+      background: #fff;
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    .mini-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      height: 32px;
+      white-space: nowrap;
+    }
+
+    .mini-btn-primary { background: var(--primary); color: white; }
+    .mini-btn-primary:hover { background: var(--primary-hover); }
+    
+    .mini-btn-secondary { background: white; border-color: var(--border); color: var(--text-main); }
+    .mini-btn-secondary:hover { background: #f8fafc; border-color: #cbd5e1; }
+    
+    .mini-btn-success { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+    .mini-btn-success:hover { background: #dcfce7; }
+
+    /* 保留原有样式的兼容 */
+    .stat-compact-item-old {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 0;
+      border-left: none;
+      position: relative;
+    }
+    .stat-compact-item:not(:last-child)::after {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 4px;
-      height: 100%;
-      background: linear-gradient(180deg, #007aff, #5ac8fa);
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      right: -10px;
+      top: 20%;
+      height: 60%;
+      width: 1px;
+      background: var(--border);
     }
 
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      border-color: #d2d2d7;
-    }
+    .stat-compact-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+    .stat-compact-value { font-size: 28px; font-weight: 800; letter-spacing: -1px; line-height: 1.2; }
+    
+    .stat-total { color: var(--text-main); }
+    .stat-active { color: #16a34a; }
+    .stat-warning { color: #f59e0b; }
+    .stat-expired { color: #ef4444; }
 
-    .stat-card:hover::before {
-      opacity: 1;
-    }
-
-    .stat-card:nth-child(1)::before {
-      background: linear-gradient(180deg, #007aff, #5ac8fa);
-    }
-
-    .stat-card:nth-child(2)::before {
-      background: linear-gradient(180deg, #34c759, #30d158);
-    }
-
-    .stat-card:nth-child(3)::before {
-      background: linear-gradient(180deg, #ff9500, #ffb340);
-    }
-
-    .stat-card:nth-child(4)::before {
-      background: linear-gradient(180deg, #ff3b30, #ff6b6b);
-    }
-
-    .stat-value {
-      font-size: 36px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #1d1d1f, #6e6e73);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .stat-card:nth-child(1) .stat-value {
-      background: linear-gradient(135deg, #007aff, #5ac8fa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .stat-card:nth-child(2) .stat-value {
-      background: linear-gradient(135deg, #34c759, #30d158);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .stat-card:nth-child(3) .stat-value {
-      background: linear-gradient(135deg, #ff9500, #ffb340);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .stat-card:nth-child(4) .stat-value {
-      background: linear-gradient(135deg, #ff3b30, #ff6b6b);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .stat-label {
-      font-size: 13px;
-      color: #86868b;
-      font-weight: 500;
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
+    @media (max-width: 1100px) {
+      .dashboard-overview { grid-template-columns: 1fr; }
+      .current-account-panel { border-right: none; border-bottom: 1px solid #f0f0f0; }
+      .stats-overview-panel { grid-template-columns: repeat(2, 1fr); }
     }
 
     .switch-accounts-grid {
@@ -1636,9 +2441,9 @@
     }
 
     .switch-account-card {
-      background: #f5f5f7;
-      border: 1px solid #e5e5ea;
-      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
       padding: 12px;
       min-height: 88px;
       display: flex;
@@ -1646,11 +2451,13 @@
       justify-content: space-between;
       cursor: pointer;
       position: relative;
+      transition: all 0.2s ease;
     }
 
     .switch-account-card:hover { 
-      background: #ebebf0;
-      border-color: #d2d2d7;
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      box-shadow: var(--shadow-sm);
     }
 
     .used-account-card {
@@ -1708,10 +2515,10 @@
     }
 
     .tutorial-card {
-      background: #f5f5f7;
-      border-radius: 8px;
+      background: #f8fafc;
+      border-radius: var(--radius-md);
       padding: 20px;
-      border: 1px solid #e5e5ea;
+      border: 1px solid var(--border);
     }
 
     .tutorial-step {
@@ -1765,9 +2572,9 @@
     }
 
     .faq-item {
-      background: #ffffff;
-      border: 1px solid #e5e5ea;
-      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
       padding: 16px 20px;
       margin-bottom: 12px;
     }
@@ -1775,8 +2582,11 @@
     .faq-question {
       font-size: 15px;
       font-weight: 600;
-      color: #1d1d1f;
+      color: var(--text-main);
       margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .faq-answer {
@@ -1859,39 +2669,36 @@
     }
 
     .contact-box {
-      background: #f5f5f7;
-      border: 1px solid #e5e5ea;
-      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
       padding: 20px;
     }
 
     .contact-box p {
       font-size: 13px;
-      color: #6e6e73;
+      color: var(--text-muted);
       line-height: 1.5;
       margin-bottom: 0;
     }
 
     /* 滚动条样式 */
-    .content-body::-webkit-scrollbar,
-    .sidebar-nav::-webkit-scrollbar {
-      width: 8px;
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
     }
 
-    .content-body::-webkit-scrollbar-track,
-    .sidebar-nav::-webkit-scrollbar-track {
-      background: #f5f5f7;
+    ::-webkit-scrollbar-track {
+      background: transparent;
     }
 
-    .content-body::-webkit-scrollbar-thumb,
-    .sidebar-nav::-webkit-scrollbar-thumb {
-      background: #d2d2d7;
-      border-radius: 4px;
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
     }
 
-    .content-body::-webkit-scrollbar-thumb:hover,
-    .sidebar-nav::-webkit-scrollbar-thumb:hover {
-      background: #b8b8bd;
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
     }
 
     /* 按钮图标对齐 */
@@ -1911,10 +2718,10 @@
     }
 
     .float-btn {
-      width: 44px;
-      height: 44px;
-      border: none;
-      background: #ffffff;
+      width: 50px;
+      height: 50px;
+      border: 1px solid var(--border);
+      background: white;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -1922,12 +2729,12 @@
       transition: all 0.2s ease;
       position: relative;
       border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
 
     .float-btn:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      transform: translateY(-4px);
     }
 
     .float-btn:active {
@@ -1936,33 +2743,35 @@
     }
 
     .refresh-btn {
-      color: #007aff;
+      color: var(--primary);
     }
 
     .refresh-btn:hover {
-      color: #0051d5;
-      background: #e3f2fd;
+      color: var(--primary-hover);
+      background: var(--primary-light);
     }
 
     .delete-all-btn {
-      color: #ff3b30;
+      color: #ef4444;
     }
 
     .delete-all-btn:hover {
-      color: #d32f2f;
-      background: #ffebee;
+      color: #dc2626;
+      background: #fef2f2;
     }
 
     .save-btn {
       position: fixed;
       right: 24px;
       bottom: 24px;
-      color: #34c759;
+      background: #10b981;
+      color: white;
+      border: none;
     }
 
     .save-btn:hover {
-      color: #30d158;
-      background: #e8f5e9;
+      background: #059669;
+      color: white;
     }
 
     /* 响应式设计 */
@@ -2008,19 +2817,51 @@
     // 将 ipcRenderer 设为全局变量，避免重复声明
     window.ipcRenderer = ipcRenderer;
   </script>
-  <script src="src/i18n.js"></script>
   <script>
     // 加载 ConfigManager 并设为全局变量
     const ConfigManager = require('./js/configManager');
     window.ConfigManager = ConfigManager;
+    
+    // 加载 CONSTANTS 并设为全局变量（供浏览器环境使用）
+    const CONSTANTS = require('./js/constants');
+    window.CONSTANTS = CONSTANTS;
+    
+    // 加载 axios 并设为全局变量
+    const axios = require('axios');
+    window.axios = axios;
   </script>
-  <script src="js/resetMachine.js"></script>
   <script src="js/filePathManager.js"></script>
   <script src="js/domainManager.js"></script>
-  <script src="js/accountManager.js"></script>
   <script src="js/accountQuery.js"></script>
+  <script>
+    // 验证 AccountQuery 模块是否正确加载
+    console.log('=== AccountQuery 模块加载检查 ===');
+    console.log('window.AccountQuery 类型:', typeof window.AccountQuery);
+    console.log('window.axios 类型:', typeof window.axios);
+    console.log('window.CONSTANTS 类型:', typeof window.CONSTANTS);
+    
+    if (typeof window.AccountQuery === 'undefined') {
+      console.error('❌ AccountQuery 模块加载失败');
+      console.error('请检查 js/accountQuery.js 文件是否存在语法错误');
+    } else {
+      console.log('✅ AccountQuery 模块加载成功');
+      console.log('AccountQuery 对象:', window.AccountQuery);
+      
+      // 测试依赖加载
+      try {
+        if (window.AccountQuery.queryAccount) {
+          console.log('✅ queryAccount 方法存在');
+        }
+      } catch (e) {
+        console.error('❌ 测试 AccountQuery 方法失败:', e);
+      }
+    }
+    console.log('=== 检查完成 ===');
+  </script>
+  <script src="js/accountManager.js"></script>
   <script src="js/accountSwitcher.js"></script>
   <script src="js/currentAccountDetector.js"></script>
+  <script src="js/autoBindCard.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -2028,16 +2869,10 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="app-logo">
-          <div class="app-logo-icon">W</div>
+          <div class="app-logo-icon"><img src="https://windsurf.com/favicon.png" alt="Windsurf"></div>
           <div class="app-logo-text">Windsurf Tool</div>
         </div>
-        <div class="app-version">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span id="sidebarPlatformInfo" style="color: #86868b;">-</span>
-            <span>v4.4.1</span>
-          </div>
-          <span class="free-badge">免费使用</span>
-        </div>
+        <div class="app-version">批量注册 一键切号 获取绑卡链接</div>
       </div>
 
       <nav class="sidebar-nav">
@@ -2045,17 +2880,13 @@
           <i data-lucide="users" class="nav-item-icon"></i>
           <span>账号管理</span>
         </button>
-        <button class="nav-item" onclick="openPurchaseUrl()">
-          <i data-lucide="shopping-cart" class="nav-item-icon"></i>
-          <span>购买账号</span>
+        <button class="nav-item" onclick="openBatchRegisterModal()">
+          <i data-lucide="zap" class="nav-item-icon"></i>
+          <span>批量注册</span>
         </button>
-        <button class="nav-item" onclick="switchView('virtualcard')">
+        <button class="nav-item" onclick="switchView('autoBindCard')">
           <i data-lucide="credit-card" class="nav-item-icon"></i>
-          <span>虚拟卡管理</span>
-        </button>
-        <button class="nav-item" onclick="switchView('reset')">
-          <i data-lucide="rotate-ccw" class="nav-item-icon"></i>
-          <span>重置机器ID</span>
+          <span>自动绑卡</span>
         </button>
         <button class="nav-item" onclick="switchView('settings')">
           <i data-lucide="settings" class="nav-item-icon"></i>
@@ -2065,981 +2896,519 @@
           <i data-lucide="book-open" class="nav-item-icon"></i>
           <span>使用教程</span>
         </button>
-        <button class="nav-item" onclick="switchView('sponsor')">
-          <i data-lucide="heart" class="nav-item-icon"></i>
-          <span>赞助支持</span>
+        <button class="nav-item" onclick="openExternalLink('https://pay.ldxp.cn/shop/windsurftool')" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
+          <i data-lucide="shopping-cart" class="nav-item-icon"></i>
+          <span>购买Pro账号</span>
         </button>
       </nav>
 
       <div class="sidebar-footer">
         <div class="footer-links">
           <a href="https://github.com/crispvibe/Windsurf-Tool" class="footer-link" target="_blank">
-            <i data-lucide="github" class="footer-link-icon"></i>
-            <span>GitHub开源</span>
+            <i data-lucide="github" style="width:14px;height:14px;"></i> GitHub
           </a>
-          <button class="footer-link" onclick="openQQGroup()">
-            <i data-lucide="message-square" class="footer-link-icon"></i>
-            <span>反馈Bug</span>
-          </button>
           <a href="https://qm.qq.com/q/1W3jvnDoak" class="footer-link" target="_blank">
-            <i data-lucide="message-circle" class="footer-link-icon"></i>
-            <span>QQ群：469028100</span>
+            <i data-lucide="message-circle" style="width:14px;height:14px;"></i> QQ群: 469028100
           </a>
-          <button class="footer-link" onclick="checkForUpdates()">
-            <i data-lucide="refresh-cw" class="footer-link-icon"></i>
-            <span>检查更新</span>
-          </button>
-          <button class="footer-link" onclick="openLanguageModal()">
-            <i data-lucide="languages" class="footer-link-icon"></i>
-            <span>语言设置</span>
-          </button>
         </div>
       </div>
     </aside>
 
     <!-- 右侧主内容区 -->
     <main class="main-content">
-      <div class="content-header">
-        <div class="content-title">
-          <i data-lucide="users" class="content-title-icon" id="viewTitleIcon"></i>
-          <span id="viewTitle">账号管理</span>
+      
+      <!-- 账号管理视图 (紧凑布局) -->
+      <div id="register" class="view-content active">
+        
+        <!-- 紧凑顶部控制栏 -->
+        <div id="topInfoRow" class="compact-header">
+          
+          <!-- 左侧：当前登录信息 -->
+          <div class="header-left">
+            <div class="current-login-card">
+              <div class="login-status-dot" id="loginStatusDot"></div>
+              <div class="login-info">
+                <span id="currentAccountEmail" class="login-email">检测中...</span>
+                <span id="currentAccountType" class="login-type-tag">--</span>
+              </div>
+              <div class="login-divider"></div>
+              <div class="credits-section">
+                <span class="credits-label">已用</span>
+                <span id="currentAccountUsedCredits" class="credits-used-num">--</span>
+                <span class="credits-slash">/</span>
+                <span id="currentAccountCredits" class="credits-total-num">--</span>
+              </div>
+            </div>
+            <!-- 隐藏元素 -->
+            <span id="totalCount" style="display:none">0</span>
+            <span id="activeCount" style="display:none">0</span>
+            <span id="currentAccountExpires" style="display:none">--</span>
+            <span id="expiredCount" style="display:none">0</span>
+            <span id="creditsProgressBar" style="display:none"></span>
+          </div>
+
+          <!-- 右侧：操作区 -->
+          <div class="header-right">
+            <!-- 搜索按钮 -->
+            <button class="compact-btn compact-btn-ghost icon-only-btn" onclick="showSearchAccountModal()" title="搜索账号">
+              <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+            </button>
+            
+            <!-- 添加菜单 -->
+            <div class="dropdown-container">
+              <button class="compact-btn compact-btn-ghost" onclick="toggleAddAccountMenu(event)" id="addAccountBtn">
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i> 添加
+              </button>
+              <div class="dropdown-menu" id="addAccountMenu">
+                <div class="dropdown-item" onclick="showAddAccountForm(); hideAddAccountMenu();">
+                  <i data-lucide="edit" style="width: 14px;"></i> 手动添加
+                </div>
+                <div class="dropdown-item" onclick="showImportAccountForm(); hideAddAccountMenu();">
+                  <i data-lucide="upload" style="width: 14px;"></i> 导入账号
+                </div>
+              </div>
+            </div>
+
+            <!-- 导出菜单 -->
+            <div class="dropdown-container">
+              <button class="compact-btn compact-btn-ghost" onclick="toggleExportMenu(event)" id="exportAccountBtn">
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i> 导出
+              </button>
+              <div class="dropdown-menu" id="exportAccountMenu" style="right: 0; left: auto;">
+                <div class="dropdown-item" onclick="exportAccounts('all'); hideExportMenu();">全部导出</div>
+                <div class="dropdown-item" onclick="exportAccounts('pro'); hideExportMenu();">仅 Pro 账号</div>
+                <div class="dropdown-item" onclick="exportAccounts('free'); hideExportMenu();">仅 Free 账号</div>
+                <div class="dropdown-item" onclick="exportAccounts('enterprise'); hideExportMenu();">仅 Enterprise</div>
+                <div class="dropdown-item" onclick="exportAccounts('teams'); hideExportMenu();">仅 Teams</div>
+                <div class="dropdown-item" onclick="exportAccounts('trial'); hideExportMenu();">仅 Trial</div>
+              </div>
+            </div>
+
+            <button class="compact-btn compact-btn-ghost" onclick="batchGetAllTokens()" id="batchGetAllTokensBtn">
+              <i data-lucide="key" style="width: 14px; height: 14px;"></i> Token
+            </button>
+            
+            <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
+
+            <button class="compact-btn compact-btn-ghost icon-only-btn" onclick="refreshAllData()" title="刷新所有数据">
+              <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
+            </button>
+            
+            <button class="compact-btn compact-btn-danger icon-only-btn" onclick="deleteAllAccounts()" title="删除所有账号">
+              <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+            </button>
+          </div>
         </div>
-        <div class="content-subtitle" id="viewSubtitle">批量注册和管理 Windsurf 账号</div>
+
+        <!-- 进度条区域 -->
+        <div id="registerProgress" style="padding: 0; height: 4px; background: #e2e8f0; display: none;">
+          <div class="progress-fill" id="progressFill" style="height: 100%; background: var(--primary); width: 0; transition: width 0.3s;"></div>
+          <div id="progressText" style="display:none">0%</div>
+          <div id="registerStatus" style="display:none"></div>
+        </div>
+
+        <!-- 账号列表区域 -->
+        <div class="grid-container">
+          <div class="accounts-grid" id="accountsList">
+            <!-- 列表内容由 JS 生成 -->
+          </div>
+        </div>
       </div>
 
-      <div class="content-body">
-        <!-- 账号管理视图 -->
-        <div id="register" class="view-content active" style="position: relative;">
-      <!-- 悬浮操作按钮 -->
-      <div class="float-actions">
-        <button class="float-btn refresh-btn" onclick="refreshAllData()" title="刷新所有数据">
-          <i data-lucide="refresh-cw" style="width: 20px; height: 20px;"></i>
-        </button>
-        <button class="float-btn delete-all-btn" onclick="deleteAllAccounts()" title="删除全部账号">
-          <i data-lucide="trash" style="width: 20px; height: 20px;"></i>
-        </button>
-      </div>
-      
-      <!-- 当前登录账号 -->
-      <div id="currentAccountInfo" style="display:none; margin-bottom:20px; padding:16px 20px; background:linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%); border-radius:12px; border:1px solid #d1e7ff; box-shadow:0 2px 8px rgba(0, 122, 255, 0.08);">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #007aff, #5ac8fa); display:flex; align-items:center; justify-content:center; color:white; font-size:18px; font-weight:600; flex-shrink:0;">
-            <i data-lucide="user-check" style="width:22px; height:22px;"></i>
-          </div>
-          <div style="flex:1; min-width:0;">
-            <div style="font-size:12px; color:#86868b; font-weight:500; margin-bottom:4px;">当前登录账号</div>
-            <div style="font-size:15px; color:#1d1d1f; font-weight:600; word-break:break-all; margin-bottom:6px;" id="currentAccountEmail">未登录</div>
-            <div id="currentAccountDetails" style="display:none; font-size:12px; color:#86868b; display:flex; gap:16px; flex-wrap:wrap;">
-              <span id="currentAccountCredits">
-                <span>积分: --</span>
-              </span>
-              <span id="currentAccountUsedCredits">
-                <span>已用: --</span>
-              </span>
-              <span id="currentAccountUsage">
-                <span>使用率: --</span>
-              </span>
-              <span id="currentAccountExpires">
-                <span>到期: --</span>
-              </span>
+      <!-- 自动绑卡视图 -->
+      <div id="autoBindCard" class="view-content">
+        <div class="settings-wrapper">
+          
+          <!-- 账号选择 -->
+          <div>
+            <div class="settings-section-title">
+              <i data-lucide="user" style="width: 14px; height: 14px;"></i>
+              账号选择
+            </div>
+            <div class="settings-card-new">
+              <div class="setting-row">
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">选择账号 <span style="color: #94a3b8; font-weight: 400;">(仅显示Free账号)</span></label>
+                  <select id="autoBindAccountSelect">
+                    <option value="">-- 请选择账号 --</option>
+                  </select>
+                </div>
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">填写模式</label>
+                  <div style="display: flex; gap: 8px;">
+                    <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: 10px; border-radius: 8px; border: 2px solid #007aff; background: #f0f7ff;" id="manualModeLabel">
+                      <input type="radio" name="fillMode" value="manual" checked onchange="AutoBindCard.switchFillMode('manual')" style="display: none;">
+                      <i data-lucide="mouse-pointer-click" style="width: 14px; height: 14px; color: #007aff;"></i>
+                      <span style="font-size: 13px; color: #007aff; font-weight: 500;">手动填写</span>
+                    </label>
+                    <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: 10px; border-radius: 8px; border: 2px solid #e2e8f0; background: transparent;" id="autoModeLabel">
+                      <input type="radio" name="fillMode" value="auto" onchange="AutoBindCard.switchFillMode('auto')" style="display: none;">
+                      <i data-lucide="bot" style="width: 14px; height: 14px; color: #64748b;"></i>
+                      <span style="font-size: 13px; color: #64748b; font-weight: 500;">自动填写</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <button onclick="refreshCurrentAccount()" style="background:rgba(0, 122, 255, 0.1); border:none; color:#007aff; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:500; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s ease; flex-shrink:0;" onmouseover="this.style.background='rgba(0, 122, 255, 0.2)'" onmouseout="this.style.background='rgba(0, 122, 255, 0.1)'" title="刷新登录状态">
-            <i data-lucide="refresh-cw" style="width:14px; height:14px;"></i>
-            刷新
-          </button>
-        </div>
-      </div>
-      
-      <div id="accountStats" style="display:none; margin-bottom:24px;">
-        <div class="stats-container">
-          <div class="stat-card">
-            <div class="stat-value" id="totalCount">0</div>
-            <div class="stat-label" data-i18n="totalAccounts">总账号数</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="activeCount">0</div>
-            <div class="stat-label" data-i18n="activeAccounts">可用账号</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="warningCount">0</div>
-            <div class="stat-label" data-i18n="warningAccounts">即将到期</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="expiredCount">0</div>
-            <div class="stat-label" data-i18n="expiredAccounts">已到期</div>
-          </div>
-        </div>
-      </div>
 
-      <div class="action-bar">
-        <div class="batch-register-panel">
-          <div class="batch-register-header">
-            <i data-lucide="zap" style="width: 18px; height: 18px; color: #007aff;"></i>
-            <span>批量注册</span>
-          </div>
-          
-          <div class="batch-register-controls">
-            <div class="input-field-group">
-              <div class="input-field">
-                <label data-i18n="batchRegisterCount">
-                  <i data-lucide="hash" style="width: 14px; height: 14px;"></i>
-                  注册数量
+          <!-- 虚拟卡配置 -->
+          <div>
+            <div class="settings-section-title">
+              <i data-lucide="credit-card" style="width: 14px; height: 14px;"></i>
+              虚拟卡配置
+              <div style="margin-left: auto; display: flex; gap: 12px; align-items: center;">
+                <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; font-weight: 400;">
+                  <input type="radio" name="autoBindCardMode" value="bin" checked onchange="AutoBindCard.switchCardModeView('bin')"> 卡号段生成
                 </label>
-                <input type="number" id="registerCount" value="1" min="1" max="50" placeholder="1-50">
+                <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; cursor: pointer; font-weight: 400;">
+                  <input type="radio" name="autoBindCardMode" value="full" onchange="AutoBindCard.switchCardModeView('full')"> 完整卡信息
+                </label>
+              </div>
+            </div>
+            <div class="settings-card-new">
+              <!-- 卡号段模式 -->
+              <div id="autoBindBinMode" class="setting-full-row">
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">卡号段 (x为随机数字)</label>
+                  <input type="text" id="autoBindCardBin" placeholder="559888035xxxxxxx" value="559888035xxxxxxx" style="font-family: monospace;" oninput="AutoBindCard.validateCardBin(this)" maxlength="19">
+                  <div id="autoBindCardBinStatus" class="setting-helper" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>启动绑卡时将自动生成完整卡号、有效期和CVV</span>
+                    <span id="autoBindCardBinLength" style="font-family: monospace; color: #4CAF50;">16/16</span>
+                  </div>
+                </div>
               </div>
               
-              <div class="input-field">
-                <label data-i18n="batchRegisterThreads">
-                  <i data-lucide="cpu" style="width: 14px; height: 14px;"></i>
-                  并发数
-                </label>
-                <input type="number" id="registerThreads" value="1" min="1" max="10" placeholder="1-10">
-              </div>
-            </div>
-            
-            <div class="batch-register-actions">
-              <button class="btn btn-primary btn-register" id="startBatchRegisterBtn" onclick="openBatchRegisterModal()" data-i18n="startBatchRegister">
-                <i data-lucide="play-circle" style="width: 18px; height: 18px;"></i>
-                开始注册
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        <div class="account-actions-group">
-          <div class="dropdown-container">
-            <button class="btn btn-primary" onclick="toggleAddAccountMenu(event)" id="addAccountBtn">
-              <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
-              添加账号
-              <i data-lucide="chevron-down" style="width: 14px; height: 14px; margin-left: 4px;"></i>
-            </button>
-            <div class="dropdown-menu" id="addAccountMenu">
-              <div class="dropdown-item" onclick="showAddAccountForm(); hideAddAccountMenu();">
-                <i data-lucide="edit" style="width: 16px; height: 16px;"></i>
-                <span>手动添加</span>
-              </div>
-              <div class="dropdown-item" onclick="showImportAccountForm(); hideAddAccountMenu();">
-                <i data-lucide="upload" style="width: 16px; height: 16px;"></i>
-                <span>导入账号</span>
+              <!-- 完整卡信息模式 -->
+              <div id="autoBindFullMode" style="display: none;">
+                <div class="setting-full-row" style="margin-bottom: 12px;">
+                  <div class="setting-input-wrapper">
+                    <label class="setting-label">粘贴卡片信息</label>
+                    <div style="display: flex; gap: 8px;">
+                      <input type="text" id="autoBindCardPaste" placeholder="格式: 卡号|月份|年份|CVV" style="flex: 1;">
+                      <button class="btn btn-secondary" onclick="AutoBindCard.parseCardInfo()">解析</button>
+                    </div>
+                    <div class="setting-helper">示例: 5598880380486821|06|2030|331</div>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <div class="setting-input-wrapper" style="flex: 2;">
+                    <label class="setting-label">卡号</label>
+                    <input type="text" id="autoBindCardNumber" placeholder="16位卡号" style="font-family: monospace;">
+                  </div>
+                  <div class="setting-input-wrapper">
+                    <label class="setting-label">月份</label>
+                    <input type="text" id="autoBindExpMonth" placeholder="MM" maxlength="2" style="text-align: center;">
+                  </div>
+                  <div class="setting-input-wrapper">
+                    <label class="setting-label">年份</label>
+                    <input type="text" id="autoBindExpYear" placeholder="YY" maxlength="4" style="text-align: center;">
+                  </div>
+                  <div class="setting-input-wrapper">
+                    <label class="setting-label">CVV</label>
+                    <input type="text" id="autoBindCvv" placeholder="CVV" maxlength="4" style="text-align: center;">
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div class="dropdown-container">
-            <button class="btn btn-primary" onclick="toggleExportMenu(event)" id="exportAccountBtn">
-              <i data-lucide="download" style="width: 16px; height: 16px;"></i>
-              导出账号
-              <i data-lucide="chevron-down" style="width: 14px; height: 14px; margin-left: 4px;"></i>
-            </button>
-            <div class="dropdown-menu" id="exportAccountMenu">
-              <div class="dropdown-item" onclick="exportAccounts('all'); hideExportMenu();">
-                <i data-lucide="database" style="width: 16px; height: 16px;"></i>
-                <span>导出全部账号</span>
+
+          <!-- 账单信息 -->
+          <div>
+            <div class="settings-section-title">
+              <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+              账单信息
+              <div style="margin-left: auto;">
+                <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;" onclick="AutoBindCard.randomizeBillingView()">
+                  <i data-lucide="shuffle" style="width: 12px; height: 12px;"></i> 随机生成
+                </button>
               </div>
-              <div class="dropdown-item" onclick="exportAccounts('pro'); hideExportMenu();">
-                <i data-lucide="crown" style="width: 16px; height: 16px;"></i>
-                <span>导出Pro账号</span>
+            </div>
+            <div class="settings-card-new">
+              <div class="setting-row">
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">持卡人姓名</label>
+                  <input type="text" id="autoBindName" placeholder="姓名">
+                </div>
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">国家/地区</label>
+                  <select id="autoBindCountry" onchange="AutoBindCard.switchCountry(this.value)">
+                    <option value="CN">中国</option>
+                    <option value="HK">香港</option>
+                    <option value="US">美国</option>
+                  </select>
+                </div>
               </div>
-              <div class="dropdown-item" onclick="exportAccounts('free'); hideExportMenu();">
-                <i data-lucide="user" style="width: 16px; height: 16px;"></i>
-                <span>导出Free账号</span>
+              <div class="setting-row" id="autoBindProvinceRow">
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">省/州</label>
+                  <select id="autoBindProvince">
+                    <option value="">-- 选择 --</option>
+                  </select>
+                </div>
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">城市</label>
+                  <input type="text" id="autoBindCity" placeholder="城市">
+                </div>
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">区/县</label>
+                  <input type="text" id="autoBindDistrict" placeholder="区/县">
+                </div>
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">邮编</label>
+                  <input type="text" id="autoBindPostalCode" placeholder="邮政编码">
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-input-wrapper" style="flex: 2;">
+                  <label class="setting-label">街道地址</label>
+                  <input type="text" id="autoBindAddress" placeholder="详细地址">
+                </div>
+                <div class="setting-input-wrapper">
+                  <label class="setting-label">地址第2行 (选填)</label>
+                  <input type="text" id="autoBindAddress2" placeholder="公寓/房间号">
+                </div>
               </div>
             </div>
           </div>
-          <button class="btn btn-success" onclick="batchGetAllTokens()" id="batchGetAllTokensBtn" title="为所有有密码的账号获取Token">
-            <i data-lucide="key" style="width: 16px; height: 16px;"></i>
-            获取Token
+
+          <!-- 操作区 -->
+          <div>
+            <div class="settings-card-new" style="padding: 16px;">
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <div id="autoBindStatus" style="display: none; flex: 1; padding: 12px 16px; border-radius: 8px; background: #f0f9ff; border: 1px solid #bae6fd; align-items: center; gap: 8px;">
+                  <i data-lucide="loader-2" id="autoBindSpinner" style="width: 16px; height: 16px; animation: spin 1s linear infinite; color: #0284c7;"></i>
+                  <span id="autoBindStatusText" style="font-size: 13px; color: #0369a1;">准备中...</span>
+                </div>
+                <button class="btn btn-primary" id="startAutoBindBtn" onclick="AutoBindCard.startFromView()" style="flex: 1;">
+                  <i data-lucide="rocket" style="width: 16px; height: 16px;"></i> 开始绑卡
+                </button>
+              </div>
+              <div class="setting-helper" style="margin-top: 12px; text-align: center;">
+                提示：每个账号仅限绑卡一次。手动模式将打开浏览器，自动模式尝试自动填写。<br>
+                为了防止恶意使用，每天绑卡限制为50次，第二天自动清零，请勿滥用。<br>
+                <span style="color: #3b82f6; font-weight: 500;">今日已使用: <span id="autoBindUsageCount">0</span> / 50 次</span>
+              </div>
+            </div>
+          </div>
+          
+          <div style="height: 60px;"></div>
+
+          <!-- 悬浮保存按钮 -->
+          <button class="save-config-btn autoBindSaveBtn" onclick="AutoBindCard.saveViewConfig()" title="保存绑卡配置" style="display: none;">
+            <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+            保存配置
           </button>
         </div>
-        
       </div>
 
-      <div id="registerProgress" style="display:none; margin-top:12px;">
-        <div style="margin-bottom:8px; font-size:12px; color:#86868b; text-align:center;" id="progressText">0%</div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-        <div id="registerStatus"></div>
-      </div>
-      
-      <div class="accounts-grid" id="accountsList"></div>
-    </div>
-
-    
-
-
-        <!-- 虚拟卡管理视图 -->
-        <div id="virtualcard" class="view-content">
-          <div class="coming-soon-container">
-            <div class="coming-soon-icon">
-              <i data-lucide="credit-card" style="width: 64px; height: 64px;"></i>
-            </div>
-            <h2 class="coming-soon-title">虚拟卡管理</h2>
-            <p class="coming-soon-subtitle">功能开发中，敬请期待...</p>
-            <div class="coming-soon-features">
-              <div class="feature-item">
-                <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
-                <span>虚拟信用卡管理</span>
+      <!-- 系统设置视图 -->
+      <div id="settings" class="view-content">
+        <div class="settings-wrapper">
+            
+            <!-- 基础设置 -->
+            <div>
+              <div class="settings-section-title">
+                <i data-lucide="sliders" style="width: 14px; height: 14px;"></i>
+                基础设置
               </div>
-              <div class="feature-item">
-                <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
-                <span>自动绑定账号</span>
-              </div>
-              <div class="feature-item">
-                <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
-                <span>支付记录查询</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 重置机器ID视图 -->
-        <div id="reset" class="view-content">
-          <div class="settings-container">
-            <!-- Windsurf重置 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="wind" style="width: 18px; height: 18px;"></i>
-                <h3>Windsurf 重置</h3>
-              </div>
-              <div class="settings-card-body">
-                <p style="font-size: 13px; color: #6e6e73; margin-bottom: 12px; line-height: 1.6;">
-                  重置 Windsurf 编辑器的机器ID和设备指纹信息，包括：
-                </p>
-                <ul style="font-size: 12px; color: #86868b; margin: 0 0 16px 20px; line-height: 1.8;">
-                  <li>主机器ID (machineid 文件)</li>
-                  <li>遥测机器ID (telemetry.machineId)</li>
-                  <li>SQM ID (telemetry.sqmId)</li>
-                  <li>开发设备ID (telemetry.devDeviceId)</li>
-                  <li>服务机器ID (storage.serviceMachineId)</li>
-                </ul>
-                <div style="background: #f0f8ff; border: 1px solid #d1e7ff; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
-                  <p style="font-size: 12px; color: #007aff; margin: 0; line-height: 1.6;">
-                    <i data-lucide="info" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
-                    Windows 系统会自动检测安装路径并显示详细的配置文件位置
-                  </p>
-                </div>
-                <button class="btn btn-primary btn-large" onclick="resetWindsurfMachine()">
-                  <i data-lucide="rotate-ccw" style="width: 18px; height: 18px;"></i>
-                  开始重置 Windsurf
-                </button>
-              </div>
-            </div>
-
-            <!-- Cursor重置 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="mouse-pointer-2" style="width: 18px; height: 18px;"></i>
-                <h3>Cursor 重置</h3>
-              </div>
-              <div class="settings-card-body">
-                <p style="font-size: 13px; color: #6e6e73; margin-bottom: 12px; line-height: 1.6;">
-                  重置 Cursor 编辑器的机器ID和设备指纹信息
-                </p>
-                <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
-                  <p style="font-size: 12px; color: #856404; margin: 0; line-height: 1.6;">
-                    <i data-lucide="alert-triangle" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
-                    此功能正在开发中，敬请期待后续版本更新
-                  </p>
-                </div>
-                <button class="btn btn-secondary btn-large" onclick="resetCursorMachine()" disabled style="opacity: 0.6; cursor: not-allowed;">
-                  <i data-lucide="code" style="width: 18px; height: 18px;"></i>
-                  开发中
-                </button>
-              </div>
-            </div>
-
-            <!-- 日志输出区域 -->
-            <div class="settings-card full-width" id="resetLogCard" style="display: none;">
-              <div class="settings-card-header">
-                <i data-lucide="terminal" style="width: 18px; height: 18px;"></i>
-                <h3>操作日志</h3>
-              </div>
-              <div class="settings-card-body">
-                <div class="register-log-container" style="height: 300px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #2d2d2d; border-bottom: 1px solid #444;">
-                    <span style="color: #d4d4d4; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">实时日志</span>
-                    <button 
-                      onclick="copyResetLog()" 
-                      style="background: #007aff; border: none; color: white; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0, 122, 255, 0.3);"
-                      onmouseover="this.style.background='#0051d5'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 3px 6px rgba(0, 122, 255, 0.4)'"
-                      onmouseout="this.style.background='#007aff'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 122, 255, 0.3)'"
-                      title="复制全部日志到剪贴板">
-                      <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
-                      复制日志
-                    </button>
+              <div class="settings-card-new">
+                <div class="setting-row">
+                  <div class="setting-input-wrapper">
+                    <label class="setting-label">密码策略</label>
+                    <select id="passwordMode">
+                      <option value="email">使用账号名作为密码</option>
+                      <option value="random">生成高强度随机密码</option>
+                    </select>
+                    <div class="setting-helper">注册新账号时的密码生成规则</div>
                   </div>
-                  <div class="register-log" id="resetLog"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 系统设置视图 -->
-        <div id="settings" class="view-content">
-          <div class="settings-container">
-            <!-- 邮箱域名配置 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
-                <h3>邮箱域名配置</h3>
-              </div>
-              <div class="settings-card-body">
-                <div class="form-group">
-                  <label>
-                    <i data-lucide="globe" style="width: 14px; height: 14px;"></i>
-                    添加邮箱域名
-                  </label>
-                  <div style="position: relative;">
-                    <input 
-                      type="text" 
-                      id="domainInput" 
-                      placeholder="输入域名后按回车添加（例如：gmail.com）" 
-                      style="width: 100%; padding: 10px 12px; font-size: 13px; border: 1px solid #d1d1d6; border-radius: 6px;"
-                      onkeypress="handleDomainInputKeyPress(event)">
-                    <button 
-                      onclick="addDomain()" 
-                      style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 6px 12px; background: #007aff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;">
-                      <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
-                      添加
-                    </button>
-                  </div>
-                  <div class="form-tip" style="margin-top: 8px;">
-                    <i data-lucide="info" style="width: 12px; height: 12px;"></i>
-                    <span>输入域名后按 <kbd style="padding: 2px 6px; background: #f5f5f7; border: 1px solid #d1d1d6; border-radius: 3px; font-family: monospace; font-size: 11px;">Enter</kbd> 或点击"添加"按钮</span>
+                  
+                  <div class="setting-input-wrapper">
+                    <label class="setting-label">自动刷新间隔</label>
+                    <select id="queryInterval">
+                      <option value="5">每 5 分钟</option>
+                      <option value="10">每 10 分钟</option>
+                      <option value="30">每 30 分钟</option>
+                      <option value="60">每 1 小时</option>
+                    </select>
+                    <div class="setting-helper">后台自动更新账号积分状态的频率</div>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <!-- 已配置的域名列表 -->
-                <div class="form-group" style="margin-top: 20px;">
-                  <label>
-                    <i data-lucide="list" style="width: 14px; height: 14px;"></i>
-                    已配置的域名 (<span id="domainCount">0</span>)
-                  </label>
-                  <div id="domainTags" style="min-height: 40px; padding: 8px; background: white; border: 1px solid #d1d1d6; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start;">
-                    <div style="width: 100%; text-align: center; color: #86868b; font-size: 12px; padding: 12px 0;" id="emptyDomainHint">
+            <!-- 域名管理 -->
+            <div>
+              <div class="settings-section-title">
+                <i data-lucide="globe" style="width: 14px; height: 14px;"></i>
+                域名管理
+              </div>
+              <div class="settings-card-new">
+                <div class="setting-full-row">
+                  <div class="setting-input-wrapper">
+                    <label class="setting-label">添加邮箱域名</label>
+                    <div style="display: flex; gap: 8px;">
+                      <input 
+                        type="text" 
+                        id="domainInput" 
+                        placeholder="输入域名 (例如: gmail.com)" 
+                        onkeypress="handleDomainInputKeyPress(event)"
+                      >
+                      <button class="btn btn-secondary" onclick="addDomain()" style="white-space: nowrap;">添加</button>
+                    </div>
+                  </div>
+                  
+                  <div class="tags-container" id="domainTags">
+                    <div id="emptyDomainHint" style="width: 100%; text-align: center; color: #94a3b8; font-size: 13px; padding: 10px;">
                       暂无配置的域名
                     </div>
                   </div>
+                  <div class="setting-helper" style="text-align: right;">已配置: <span id="domainCount">0</span> 个</div>
                 </div>
               </div>
             </div>
 
-            <!-- 密码配置 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
-                <h3>注册配置</h3>
+            <!-- IMAP 服务配置 -->
+            <div>
+              <div class="settings-section-title">
+                <i data-lucide="mail" style="width: 14px; height: 14px;"></i>
+                IMAP 服务配置
               </div>
-              <div class="settings-card-body">
-                <div class="form-group">
-                  <label>
-                    <i data-lucide="key" style="width: 14px; height: 14px;"></i>
-                    密码生成方式
-                  </label>
-                  <select id="passwordMode" style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #d1d1d6; border-radius: 6px; background: white;">
-                    <option value="email">使用账号作为密码</option>
-                    <option value="random">使用随机密码</option>
-                  </select>
-                  <div class="form-tip" style="margin-top: 6px;">
-                    <i data-lucide="info" style="width: 12px; height: 12px;"></i>
-                    <span>选择注册时使用的密码生成方式</span>
-                  </div>
-                </div>
-                
-                <div class="form-group" style="margin-top: 16px;">
-                  <label>
-                    <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
-                    自动查询积分间隔
-                  </label>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <select 
-                      id="queryInterval"
-                      style="flex: 1; padding: 8px 12px; font-size: 13px; border: 1px solid #d1d1d6; border-radius: 6px; background: white; cursor: pointer;"
-                    >
-                      <option value="5">5 分钟</option>
-                      <option value="10">10 分钟</option>
-                      <option value="30">30 分钟</option>
-                      <option value="60">60 分钟</option>
-                    </select>
-                  </div>
-                  <div class="form-tip" style="margin-top: 6px;">
-                    <i data-lucide="info" style="width: 12px; height: 12px;"></i>
-                    <span>自动查询账号积分的时间间隔，推荐使用 5 或 10 分钟</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- IMAP邮箱配置 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="server" style="width: 18px; height: 18px;"></i>
-                <h3>IMAP 邮箱配置</h3>
-              </div>
-              <div class="settings-card-body">
-                <div class="settings-grid">
-                  <div class="form-group">
-                    <label>
-                      <i data-lucide="mail" style="width: 14px; height: 14px;"></i>
-                      QQ邮箱
-                    </label>
+              <div class="settings-card-new">
+                <div class="setting-row">
+                  <div class="setting-input-wrapper">
+                    <label class="setting-label">QQ 邮箱账号</label>
                     <input type="email" id="imapUser" placeholder="your@qq.com">
                   </div>
-                  
-                  <div class="form-group">
-                    <label>
-                      <i data-lucide="key" style="width: 14px; height: 14px;"></i>
-                      授权码
-                    </label>
-                    <div style="position: relative;">
-                      <input type="password" id="imapPassword" placeholder="请输入授权码" style="padding-right: 40px;">
-                      <button class="password-toggle-btn" onclick="toggleImapPassword()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%);" title="显示/隐藏密码">
-                        <i data-lucide="eye" id="imapPasswordIcon" style="width: 16px; height: 16px;"></i>
-                      </button>
-                    </div>
+                  <div class="setting-input-wrapper">
+                    <label class="setting-label">授权码 (非密码)</label>
+                    <input type="text" id="imapPassword" placeholder="请输入16位授权码">
                   </div>
                 </div>
-                
-                <div class="form-tip">
-                  <i data-lucide="alert-circle" style="width: 12px; height: 12px;"></i>
-                  <span>密码为邮箱授权码，非登录密码（QQ邮箱需在设置-账户中开启IMAP并生成授权码）</span>
+                <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+                  <button class="btn btn-secondary" onclick="testImap()">
+                    <i data-lucide="wifi" style="width: 14px; height: 14px;"></i> 测试连接
+                  </button>
                 </div>
-                
-                <button class="btn btn-primary" onclick="testImap()" style="margin-top: 12px;">
-                  <i data-lucide="wifi" style="width: 14px; height: 14px;"></i>
-                  测试连接
-                </button>
               </div>
             </div>
 
-            <!-- 配置文件路径 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="folder" style="width: 18px; height: 18px;"></i>
-                <h3>配置文件路径</h3>
+            <!-- 系统路径与环境 -->
+            <div>
+              <div class="settings-section-title">
+                <i data-lucide="hard-drive" style="width: 14px; height: 14px;"></i>
+                系统路径与环境
               </div>
-              <div class="settings-card-body">
-                <!-- 用户数据目录 -->
-                <div class="form-group">
-                  <label style="font-size: 12px;">
-                    <i data-lucide="folder" style="width: 12px; height: 12px;"></i>
-                    用户数据目录
-                  </label>
-                  <input type="text" id="userDataPath" readonly style="width: 100%; background: #f5f5f7; cursor: text; user-select: all; padding: 6px 10px; font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 11px; border: 1px solid #d1d1d6; border-radius: 4px;" placeholder="加载中...">
+              <div class="settings-card-new" style="background: #fafafa;">
+                <div class="path-display-group">
+                  <label class="setting-label" style="font-size: 12px; color: #64748b;">用户数据目录</label>
+                  <input type="text" id="userDataPath" readonly class="path-input-readonly" placeholder="加载中...">
                 </div>
 
-                <!-- 配置文件 -->
-                <div class="form-group" style="margin-top: 12px;">
-                  <label style="font-size: 12px;">
-                    <i data-lucide="settings" style="width: 12px; height: 12px;"></i>
-                    配置文件
-                  </label>
-                  <input type="text" id="configFilePath" readonly style="width: 100%; background: #f5f5f7; cursor: text; user-select: all; padding: 6px 10px; font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 11px; border: 1px solid #d1d1d6; border-radius: 4px;" placeholder="加载中...">
+                <div class="path-display-group">
+                  <label class="setting-label" style="font-size: 12px; color: #64748b;">配置文件路径</label>
+                  <input type="text" id="configFilePath" readonly class="path-input-readonly" placeholder="加载中...">
                 </div>
 
-                <!-- 账号文件 -->
-                <div class="form-group" style="margin-top: 12px;">
-                  <label style="font-size: 12px;">
-                    <i data-lucide="users" style="width: 12px; height: 12px;"></i>
-                    账号文件
-                  </label>
-                  <input type="text" id="accountsFilePath" readonly style="width: 100%; background: #f5f5f7; cursor: text; user-select: all; padding: 6px 10px; font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 11px; border: 1px solid #d1d1d6; border-radius: 4px;" placeholder="加载中...">
+                <div class="path-display-group">
+                  <label class="setting-label" style="font-size: 12px; color: #64748b;">账号存储文件</label>
+                  <input type="text" id="accountsFilePath" readonly class="path-input-readonly" placeholder="加载中...">
                 </div>
 
-                <!-- 平台信息 -->
-                <div class="form-group" style="margin-top: 12px;">
-                  <label style="font-size: 12px;">
-                    <i data-lucide="monitor" style="width: 12px; height: 12px;"></i>
-                    当前平台
-                  </label>
-                  <div style="padding: 6px 10px; background: linear-gradient(135deg, #007aff, #5ac8fa); border-radius: 4px; color: white; font-weight: 500; font-size: 12px; text-align: center;">
-                    <span id="platformInfo">加载中...</span>
-                  </div>
+                <div class="path-display-group" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 13px; color: #64748b;">当前运行平台</span>
+                  <div id="platformInfo" class="platform-badge">加载中...</div>
                 </div>
               </div>
             </div>
 
             <div id="settingsStatus"></div>
+            <div style="height: 60px;"></div>
           </div>
-          
+
           <!-- 悬浮保存按钮 -->
-          <button class="float-btn save-btn" onclick="saveSettings()" title="保存所有配置" style="display: none;">
-            <i data-lucide="save" style="width: 20px; height: 20px;"></i>
+          <button class="save-config-btn" onclick="saveSettings()" title="保存所有配置" style="display: none;">
+            <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+            保存配置
           </button>
         </div>
 
-        <!-- 赞助支持视图 -->
-        <div id="sponsor" class="view-content">
-          <div class="settings-container">
-            <!-- 赞助说明卡片 -->
-            <div class="settings-card" style="background: linear-gradient(135deg, #fff9e6 0%, #fff4d6 100%); border: 2px solid #ffe4a3;">
-              <div class="settings-card-header" style="border-bottom: 1px solid #ffe4a3;">
-                <i data-lucide="coffee" style="width: 20px; height: 20px; color: #ff9500;"></i>
-                <h3 style="color: #1d1d1f;">感谢您的支持</h3>
-              </div>
-              <div class="settings-card-body">
-                <div style="text-align: center; margin-bottom: 32px;">
-                  <p style="font-size: 15px; color: #1d1d1f; line-height: 1.8; margin: 0 auto; max-width: 700px; font-weight: 500;">
-                    本工具完全<strong style="color: #ff3b30;">免费开源</strong>，致力于为用户提供便捷的 Windsurf 账号管理服务。
-                  </p>
-                  <p style="font-size: 14px; color: #6e6e73; line-height: 1.8; margin: 16px auto 0; max-width: 700px;">
-                    但服务器运营、CDN 加速、API 中转等都需要持续投入成本。如果这个工具对您有帮助，欢迎<strong style="color: #ff3b30;">赞助支持</strong>，您的每一份支持都是我们持续更新和维护的动力！
-                  </p>
-                </div>
+      <!-- 使用教程视图 -->
+      <div id="tutorial" class="view-content">
+        <article class="tutorial-article">
+            <h1>使用教程</h1>
+            
+            <section>
+              <h2>快速开始</h2>
+              <p><strong>批量注册：</strong>点击"注册"按钮，设置数量，系统会自动完成注册流程。</p>
+              <p><strong>获取 Token：</strong>点击"Token"按钮，系统会自动登录并获取 Token。</p>
+              <p><strong>切换账号：</strong>点击账号邮箱，系统会自动切换到 Windsurf。</p>
+            </section>
 
-                <!-- 收款码展示 -->
-                <div style="display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; margin: 40px 0;">
-                  <!-- 支付宝 -->
-                  <div style="text-align: center;">
-                    <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); display: inline-block; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-8px)'" onmouseout="this.style.transform='translateY(0)'">
-                      <img src="pay/IMG_4543.jpeg" alt="支付宝收款码" style="width: 240px; height: 240px; border-radius: 12px; display: block;">
-                    </div>
-                    <div style="margin-top: 16px; font-size: 16px; font-weight: 600; color: #1d1d1f; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i data-lucide="smartphone" style="width: 18px; height: 18px; color: #1677ff;"></i>
-                      支付宝
-                    </div>
-                    <div style="margin-top: 4px; font-size: 12px; color: #86868b;">
-                      扫码支持开发
-                    </div>
-                  </div>
+            <section>
+              <h2>QQ 邮箱配置</h2>
+              <p>在系统设置中填写以下信息：</p>
+              <ul>
+                <li>IMAP 服务器：<code>imap.qq.com</code></li>
+                <li>端口：<code>993</code></li>
+                <li>邮箱：<code>your@qq.com</code></li>
+                <li>密码：<code>授权码</code>（非QQ密码）</li>
+              </ul>
+              <p>授权码获取：QQ邮箱 → 设置 → 账户 → 开启IMAP → 生成授权码</p>
+            </section>
 
-                  <!-- QQ -->
-                  <div style="text-align: center;">
-                    <div style="background: white; padding: 20px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); display: inline-block; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-8px)'" onmouseout="this.style.transform='translateY(0)'">
-                      <img src="pay/IMG_4701.jpeg" alt="QQ收款码" style="width: 240px; height: 240px; border-radius: 12px; display: block;">
-                    </div>
-                    <div style="margin-top: 16px; font-size: 16px; font-weight: 600; color: #1d1d1f; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                      <i data-lucide="message-circle" style="width: 18px; height: 18px; color: #12b7f5;"></i>
-                      QQ
-                    </div>
-                    <div style="margin-top: 4px; font-size: 12px; color: #86868b;">
-                      扫码支持开发
-                    </div>
-                  </div>
-                </div>
+            <section>
+              <h2>Cloudflare 邮箱转发</h2>
+              <ol>
+                <li>登录 <a href="https://dash.cloudflare.com" target="_blank">Cloudflare</a>，添加域名</li>
+                <li>进入 电子邮件 → 电子邮件路由 → 启用</li>
+                <li>设置 全部捕获 → 转发到 QQ 邮箱</li>
+              </ol>
+            </section>
 
-                <!-- 感谢语 -->
-                <div style="text-align: center; padding: 20px; background: rgba(255, 255, 255, 0.7); border-radius: 12px; border: 2px dashed #ffe4a3; margin: 32px 0;">
-                  <p style="font-size: 14px; color: #1d1d1f; margin: 0; line-height: 1.8; font-weight: 500;">
-                    <i data-lucide="sparkles" style="width: 16px; height: 16px; color: #ff9500; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>
-                    <strong style="color: #ff3b30; font-size: 15px;">感谢每一位赞助者！</strong>
-                  </p>
-                  <p style="font-size: 13px; color: #6e6e73; margin: 8px 0 0; line-height: 1.6;">
-                    您的支持让我们有动力持续优化和更新
-                    <i data-lucide="heart" style="width: 14px; height: 14px; color: #ff3b30; display: inline-block; vertical-align: middle; margin-left: 4px;"></i>
-                  </p>
-                </div>
-              </div>
-            </div>
+            <section>
+              <h2>购买域名</h2>
+              <p>推荐：<a href="https://wanwang.aliyun.com/domain" target="_blank">阿里云（万网）</a></p>
+              <p>选择 .xyz、.top、.site 等后缀，首年只需 1-5 元。</p>
+            </section>
 
-            <!-- 运营成本说明 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="info" style="width: 20px; height: 20px; color: #007aff;"></i>
-                <h3>运营成本说明</h3>
-              </div>
-              <div class="settings-card-body">
-                <div style="display: grid; gap: 16px;">
-                  <div style="padding: 16px; background: #f0f8ff; border-radius: 10px; border-left: 4px solid #007aff;">
-                    <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="server" style="width: 16px; height: 16px; color: #007aff;"></i>
-                      服务器托管费用
-                    </div>
-                    <div style="font-size: 13px; color: #6e6e73; line-height: 1.6;">
-                      API 中转服务、数据存储、版本管理等需要稳定的服务器支持
-                    </div>
-                  </div>
+            <section>
+              <h2>自动绑卡</h2>
+              <p>自动绑卡功能支持虚拟卡绑定 Windsurf Pro 账号，获取无限积分。</p>
+              <h3>操作步骤</h3>
+              <ol>
+                <li>进入「自动绑卡」页面</li>
+                <li>选择需要绑卡的 <strong>Free 账号</strong></li>
+                <li>选择填写模式：<strong>手动填写</strong> 或 <strong>自动填写</strong></li>
+                <li>配置虚拟卡信息：
+                  <ul>
+                    <li><strong>卡号段生成</strong>：填写卡号段（x 为随机数字），系统自动生成完整卡号</li>
+                    <li><strong>完整卡信息</strong>：直接填写卡号、有效期、CVV</li>
+                  </ul>
+                </li>
+                <li>填写账单信息（可点击"随机生成"）</li>
+                <li>点击「开始绑卡」按钮</li>
+                <li><strong>自动填写模式</strong>：表单填写完成后，需要手动点击「订阅」按钮完成绑卡</li>
+              </ol>
+              <h3>填写模式说明</h3>
+              <ul>
+                <li><strong>手动填写</strong>：打开浏览器后需要手动点击填写按钮</li>
+                <li><strong>自动填写</strong>：打开浏览器后自动填写表单，<strong>但仍需手动点击订阅按钮</strong></li>
+              </ul>
+              <h3>重要提醒</h3>
+              <p style="color: #ef4444; font-weight: 500;">⚠️ 大部分公开的卡号段（BIN）已被风控，绑卡时可能会被拒绝。卡号段本身几乎是 0 成本的信息，请不要花钱购买所谓的"可用卡头"，谨防被骗！</p>
+            </section>
 
-                  <div style="padding: 16px; background: #f0fff4; border-radius: 10px; border-left: 4px solid #34c759;">
-                    <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="zap" style="width: 16px; height: 16px; color: #34c759;"></i>
-                      CDN 加速费用
-                    </div>
-                    <div style="font-size: 13px; color: #6e6e73; line-height: 1.6;">
-                      提升国内访问速度，确保用户获得流畅的使用体验
-                    </div>
-                  </div>
-
-                  <div style="padding: 16px; background: #fff9e6; border-radius: 10px; border-left: 4px solid #ff9500;">
-                    <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="globe" style="width: 16px; height: 16px; color: #ff9500;"></i>
-                      域名和证书
-                    </div>
-                    <div style="font-size: 13px; color: #6e6e73; line-height: 1.6;">
-                      域名续费、SSL 证书等基础设施费用
-                    </div>
-                  </div>
-
-                  <div style="padding: 16px; background: #fff0f6; border-radius: 10px; border-left: 4px solid #ff3b30;">
-                    <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="code" style="width: 16px; height: 16px; color: #ff3b30;"></i>
-                      开发维护投入
-                    </div>
-                    <div style="font-size: 13px; color: #6e6e73; line-height: 1.6;">
-                      持续的功能开发、Bug 修复、用户支持等时间投入
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            <section>
+              <h2>常见问题</h2>
+              <p><strong>浏览器无法启动？</strong> 确保已安装 Chrome 90+ 浏览器。</p>
+              <p><strong>Token 会过期吗？</strong> 不会，切号功能会自动刷新 Token。</p>
+              <p><strong>到期时间不准确？</strong> 点击"刷新积分"获取真实时间。</p>
+              <p><strong>绑卡失败？</strong> 检查卡号是否正确，或尝试更换卡号段。</p>
+            </section>
+          </article>
         </div>
 
-        <!-- 使用教程视图 -->
-        <div id="tutorial" class="view-content">
-          <div class="settings-container">
-            <!-- 系统和浏览器要求 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="monitor" style="width: 20px; height: 20px; color: #007aff;"></i>
-                <h3>系统和浏览器要求</h3>
-              </div>
-              <div class="settings-card-body">
-                <div style="background: linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%); padding: 20px; border-radius: 12px; border: 1px solid #d1e7ff; margin-bottom: 20px;">
-                  <h4 style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="chrome" style="width: 18px; height: 18px; color: #007aff;"></i>
-                    浏览器要求
-                  </h4>
-                  <div style="font-size: 13px; color: #6e6e73; line-height: 1.8; margin-bottom: 12px;">
-                    <div style="margin-bottom: 8px;">
-                      <strong style="color: #1d1d1f;">Windows 版本：</strong>使用 <span style="color: #007aff; font-weight: 600;">Microsoft Edge 90+</span>（系统预装，推荐）
-                    </div>
-                    <div style="margin-bottom: 8px;">
-                      <strong style="color: #1d1d1f;">macOS 版本：</strong>使用 <span style="color: #007aff; font-weight: 600;">Google Chrome 90+</span>
-                    </div>
-                    <div style="padding: 10px 12px; background: #fff; border-radius: 8px; border-left: 3px solid #ff9500; margin-top: 12px;">
-                      <i data-lucide="alert-triangle" style="width: 14px; height: 14px; color: #ff9500; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>
-                      <span style="color: #ff9500; font-weight: 600;">重要提示：</span>
-                      <span style="color: #6e6e73;">不支持旧版 Edge（2020年前的 EdgeHTML 版本），推荐使用最新版本以获得最佳体验</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style="background: linear-gradient(135deg, #fff9e6 0%, #fff4d6 100%); padding: 20px; border-radius: 12px; border: 1px solid #ffe4a3;">
-                  <h4 style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="laptop" style="width: 18px; height: 18px; color: #ff9500;"></i>
-                    系统要求
-                  </h4>
-                  <div style="font-size: 13px; color: #6e6e73; line-height: 1.8;">
-                    <div style="margin-bottom: 8px;">
-                      <strong style="color: #1d1d1f;">Windows：</strong>Windows 10/11（64位）
-                    </div>
-                    <div style="margin-bottom: 8px;">
-                      <strong style="color: #1d1d1f;">macOS：</strong>macOS 10.13+ (支持 Intel 和 Apple Silicon)
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 快速开始 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="rocket" style="width: 20px; height: 20px; color: #34c759;"></i>
-                <h3>快速开始</h3>
-              </div>
-              <div class="settings-card-body">
-                <div style="display: grid; gap: 16px;">
-                  <div style="padding: 16px; background: #f5f5f7; border-radius: 10px; border-left: 4px solid #007aff;">
-                    <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="user-plus" style="width: 16px; height: 16px; color: #007aff;"></i>
-                      批量注册账号
-                    </div>
-                    <div style="font-size: 13px; color: #6e6e73; line-height: 1.6;">
-                      在账号管理页面点击"批量注册"按钮，设置注册数量，系统会自动打开浏览器完成注册流程
-                    </div>
-                  </div>
-
-                  <div style="padding: 16px; background: #f5f5f7; border-radius: 10px; border-left: 4px solid #34c759;">
-                    <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="download" style="width: 16px; height: 16px; color: #34c759;"></i>
-                      导入已有账号
-                    </div>
-                    <div style="font-size: 13px; color: #6e6e73; line-height: 1.6;">
-                      点击"添加账号"手动输入邮箱和密码，或点击"导入账号"批量导入 JSON 文件
-                    </div>
-                  </div>
-
-                  <div style="padding: 16px; background: #f5f5f7; border-radius: 10px; border-left: 4px solid #ff9500;">
-                    <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="key" style="width: 16px; height: 16px; color: #ff9500;"></i>
-                      获取 Token
-                    </div>
-                    <div style="font-size: 13px; color: #6e6e73; line-height: 1.6;">
-                      导入的账号点击"获取 Token"按钮，系统会自动登录并获取完整的 Token 信息
-                    </div>
-                  </div>
-
-                  <div style="padding: 16px; background: #f5f5f7; border-radius: 10px; border-left: 4px solid #ff3b30;">
-                    <div style="font-size: 14px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="repeat" style="width: 16px; height: 16px; color: #ff3b30;"></i>
-                      切换账号
-                    </div>
-                    <div style="font-size: 13px; color: #6e6e73; line-height: 1.6;">
-                      点击账号列表中的"切换账号"按钮，系统会自动将账号切换到 Windsurf 编辑器
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 邮箱配置教程 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="mail" style="width: 20px; height: 20px; color: #007aff;"></i>
-                <h3>邮箱配置教程</h3>
-              </div>
-              <div class="settings-card-body">
-                <!-- QQ邮箱配置 -->
-                <div style="background: linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%); padding: 20px; border-radius: 12px; border: 1px solid #d1e7ff; margin-bottom: 20px;">
-                  <h4 style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="mail-check" style="width: 18px; height: 18px; color: #007aff;"></i>
-                    QQ 邮箱配置
-                  </h4>
-                  <div style="font-size: 13px; color: #6e6e73; line-height: 1.8;">
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">1. 开启 IMAP/SMTP 服务</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        • 登录 QQ 邮箱网页版<br>
-                        • 进入"设置" → "账户" → "POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV服务"<br>
-                        • 开启"IMAP/SMTP服务"<br>
-                        • 生成授权码（用于登录，不是 QQ 密码）
-                      </div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">2. 在系统设置中配置</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        • IMAP 服务器：<code style="background: #fff; padding: 2px 6px; border-radius: 4px; color: #007aff;">imap.qq.com</code><br>
-                        • IMAP 端口：<code style="background: #fff; padding: 2px 6px; border-radius: 4px; color: #007aff;">993</code><br>
-                        • 邮箱账号：<code style="background: #fff; padding: 2px 6px; border-radius: 4px; color: #007aff;">your@qq.com</code><br>
-                        • 邮箱密码：<code style="background: #fff; padding: 2px 6px; border-radius: 4px; color: #007aff;">授权码</code>（不是 QQ 密码）
-                      </div>
-                    </div>
-                    <div style="padding: 10px 12px; background: #fff; border-radius: 8px; border-left: 3px solid #007aff; margin-top: 12px;">
-                      <i data-lucide="info" style="width: 14px; height: 14px; color: #007aff; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>
-                      <span style="color: #007aff; font-weight: 600;">提示：</span>
-                      <span style="color: #6e6e73;">授权码是 QQ 邮箱生成的 16 位密码，用于第三方客户端登录</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Cloudflare 邮箱转发配置 -->
-                <div style="background: linear-gradient(135deg, #f0fff4 0%, #e6f7ed 100%); padding: 20px; border-radius: 12px; border: 1px solid #c6f6d5;">
-                  <h4 style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="cloud" style="width: 18px; height: 18px; color: #34c759;"></i>
-                    Cloudflare 邮箱转发配置
-                  </h4>
-                  <div style="font-size: 13px; color: #6e6e73; line-height: 1.8;">
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">步骤 1：添加域名到 Cloudflare</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        • 登录 <a href="https://dash.cloudflare.com" target="_blank" style="color: #007aff;">Cloudflare 控制台</a><br>
-                        • 点击"添加站点"，输入你的域名<br>
-                        • 选择免费计划，按提示修改域名 DNS 服务器
-                      </div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">步骤 2：配置邮箱路由</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        • 进入域名管理页面<br>
-                        • 点击"电子邮件" → "电子邮件路由"<br>
-                        • 启用邮箱路由功能<br>
-                        • 添加目标地址（你的 QQ 邮箱）
-                      </div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">步骤 3：设置全域转发（重要）</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        • 在"路由规则"中点击"全部捕获"<br>
-                        • 操作选择"发送到电子邮件"<br>
-                        • 目标地址填写你的 QQ 邮箱<br>
-                        • 这样 <code style="background: #fff; padding: 2px 6px; border-radius: 4px; color: #34c759;">任意前缀@你的域名</code> 都会转发到 QQ 邮箱
-                      </div>
-                    </div>
-                    <div style="padding: 10px 12px; background: #fff; border-radius: 8px; border-left: 3px solid #34c759; margin-top: 12px;">
-                      <i data-lucide="check-circle" style="width: 14px; height: 14px; color: #34c759; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>
-                      <span style="color: #34c759; font-weight: 600;">完成：</span>
-                      <span style="color: #6e6e73;">现在所有发送到 xxx@你的域名 的邮件都会自动转发到你的 QQ 邮箱</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 常见问题与虚拟卡原理 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <i data-lucide="help-circle" style="width: 20px; height: 20px; color: #ff9500;"></i>
-                <h3>常见问题</h3>
-              </div>
-              <div class="settings-card-body">
-                <!-- 常见问题 -->
-                <div style="display: grid; gap: 12px; margin-bottom: 20px;">
-                  <div style="padding: 12px; background: #f5f5f7; border-radius: 8px;">
-                    <div style="font-size: 13px; font-weight: 600; color: #1d1d1f; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="chrome" style="width: 14px; height: 14px; color: #007aff;"></i>
-                      浏览器无法启动？
-                    </div>
-                    <div style="font-size: 12px; color: #6e6e73; padding-left: 22px;">
-                      确保已安装对应浏览器（Windows 用 Edge 90+，macOS 用 Chrome 90+）
-                    </div>
-                  </div>
-
-                  <div style="padding: 12px; background: #f5f5f7; border-radius: 8px;">
-                    <div style="font-size: 13px; font-weight: 600; color: #1d1d1f; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="key" style="width: 14px; height: 14px; color: #ff9500;"></i>
-                      获取 Token 失败？
-                    </div>
-                    <div style="font-size: 12px; color: #6e6e73; padding-left: 22px;">
-                  <div style="padding: 12px; background: #f5f5f7; border-radius: 8px;">
-                    <div style="font-size: 13px; font-weight: 600; color: #1d1d1f; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                      <i data-lucide="clock" style="width: 14px; height: 14px; color: #34c759;"></i>
-                      到期时间不准确？
-                    </div>
-                    <div style="font-size: 12px; color: #6e6e73; padding-left: 22px;">
-                      点击"刷新积分"按钮获取真实到期时间
-                    </div>
-                  </div>
-
-                  <div class="faq-item">
-                    <div class="faq-question">
-                      <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i>
-                      刷新按钮的作用？
-                    </div>
-                    <div style="font-size: 12px; color: #6e6e73; padding-left: 22px; line-height: 1.8;">
-                      <strong>刷新积分按钮：</strong>更新账号的 Pro/Free 状态、积分余额、使用额度和到期时间<br>
-                      <strong>刷新所有数据按钮：</strong>刷新账号列表、域名配置、邮箱配置等所有数据
-                    </div>
-                  </div>
-                  
-                  <div class="faq-item">
-                    <div class="faq-question">
-                      <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i>
-                      Token 会过期吗？
-                    </div>
-                    <div style="font-size: 12px; color: #6e6e73; padding-left: 22px; line-height: 1.8;">
-                      <strong>不用担心！</strong>切号功能会自动使用 refreshToken 获取最新的 access_token 和 API Key<br>
-                      每次切号都会自动更新 Token，实现<strong>永久有效</strong>，无需手动更新
-                    </div>
-                  </div>
-                  
-                  <div class="faq-item">
-                    <div class="faq-question">
-                      <i data-lucide="help-circle" style="width: 16px; height: 16px;"></i>
-                      切号功能的完整流程？
-                    </div>
-                    <div style="font-size: 12px; color: #6e6e73; padding-left: 22px; line-height: 1.8;">
-                      1. 检测并自动关闭 Windsurf<br>
-                      2. 使用 refreshToken 获取新的 access_token<br>
-                      3. 使用 access_token 获取新的 API Key<br>
-                      4. 写入所有配置（sessions、authStatus、codeium配置）<br>
-                      5. 自动启动 Windsurf<br>
-                      <strong>✨ 全程自动化，Token 永久有效</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 域名生成原理 -->
-                <div style="background: linear-gradient(135deg, #fff9e6 0%, #fff4d6 100%); padding: 20px; border-radius: 12px; border: 1px solid #ffe4a3; margin-bottom: 20px;">
-                  <h4 style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="globe" style="width: 18px; height: 18px; color: #ff9500;"></i>
-                    域名生成原理
-                  </h4>
-                  <div style="font-size: 13px; color: #6e6e73; line-height: 1.8;">
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">邮箱地址格式：</strong>
-                      <code style="background: #fff; padding: 4px 8px; border-radius: 4px; color: #ff9500; display: inline-block; margin-top: 4px;">随机字符串@配置的域名</code>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">生成逻辑：</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        1. 系统从配置的域名列表中<strong>随机选择</strong>一个域名<br>
-                        2. 生成 10 位<strong>随机字符串</strong>（小写字母+数字）<br>
-                        3. 组合成完整邮箱地址：<code style="background: #fff; padding: 2px 6px; border-radius: 4px; color: #ff9500;">abc123defg@example.com</code><br>
-                        4. 通过 Cloudflare 邮箱转发接收验证码
-                      </div>
-                    </div>
-                    <div style="padding: 10px 12px; background: #fff; border-radius: 8px; border-left: 3px solid #ff9500; margin-top: 12px;">
-                      <i data-lucide="lightbulb" style="width: 14px; height: 14px; color: #ff9500; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>
-                      <span style="color: #ff9500; font-weight: 600;">优势：</span>
-                      <span style="color: #6e6e73;">每个账号使用不同的随机邮箱，避免被检测为批量注册</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 购买域名教程 -->
-                <div style="background: linear-gradient(135deg, #fff0f6 0%, #ffe6f0 100%); padding: 20px; border-radius: 12px; border: 1px solid #ffc9dd; margin-bottom: 20px;">
-                  <h4 style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="shopping-cart" style="width: 18px; height: 18px; color: #ff3b30;"></i>
-                    购买域名教程
-                  </h4>
-                  <div style="font-size: 13px; color: #6e6e73; line-height: 1.8;">
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">推荐渠道：阿里云（万网）</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        • 访问 <a href="https://wanwang.aliyun.com/domain" target="_blank" style="color: #007aff;">阿里云域名注册</a><br>
-                        • 搜索你想要的域名（任意域名都可以）<br>
-                        • 选择 <code style="background: #fff; padding: 2px 6px; border-radius: 4px; color: #ff3b30;">.xyz</code> 或 <code style="background: #fff; padding: 2px 6px; border-radius: 4px; color: #ff3b30;">.top</code> 等便宜后缀<br>
-                        • 首年价格通常只需 <strong style="color: #ff3b30;">1-5 元</strong>
-                      </div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">购买步骤：</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        1. 注册/登录阿里云账号<br>
-                        2. 搜索域名，选择便宜的后缀（.xyz、.top、.site 等）<br>
-                        3. 加入购物车，完成实名认证<br>
-                        4. 支付购买（首年 1-5 元）<br>
-                        5. 等待实名审核通过（通常 1-24 小时）
-                      </div>
-                    </div>
-                    <div style="padding: 10px 12px; background: #fff; border-radius: 8px; border-left: 3px solid #ff3b30; margin-top: 12px;">
-                      <i data-lucide="tag" style="width: 14px; height: 14px; color: #ff3b30; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>
-                      <span style="color: #ff3b30; font-weight: 600;">省钱技巧：</span>
-                      <span style="color: #6e6e73;">选择 .xyz、.top、.site 等后缀，首年只需 1-5 元。域名内容随意，只要能用于邮箱转发即可</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 虚拟卡注册 Pro 原理 -->
-                <div style="background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); padding: 20px; border-radius: 12px; border: 1px solid #ddd6fe;">
-                  <h4 style="font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-                    <i data-lucide="credit-card" style="width: 18px; height: 18px; color: #5856d6;"></i>
-                    虚拟卡注册 Pro 账号原理
-                  </h4>
-                  <div style="font-size: 13px; color: #6e6e73; line-height: 1.8;">
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">Windsurf Pro 订阅机制：</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        • Windsurf 提供 <strong>14 天免费试用</strong> Pro 功能<br>
-                        • 需要绑定信用卡才能激活试用<br>
-                        • 试用期间可以使用所有 Pro 功能<br>
-                        • 试用结束后才会扣费
-                      </div>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                      <strong style="color: #1d1d1f;">虚拟卡的作用：</strong>
-                      <div style="padding-left: 16px; margin-top: 4px;">
-                        1. 使用虚拟卡绑定账号，激活 14 天试用<br>
-                        2. 虚拟卡余额为 <code style="background: #fff; padding: 2px 6px; border-radius: 4px; color: #5856d6;">0 美元</code>，无法扣费<br>
-                        3. 试用期结束后，扣费失败，订阅自动取消<br>
-                        4. 账号降级为免费版，但<strong>试用期的使用记录保留</strong>
-                      </div>
-                    </div>
-                    <div style="padding: 10px 12px; background: #fff; border-radius: 8px; border-left: 3px solid #5856d6; margin-top: 12px;">
-                      <i data-lucide="shield-check" style="width: 14px; height: 14px; color: #5856d6; display: inline-block; vertical-align: middle; margin-right: 6px;"></i>
-                      <span style="color: #5856d6; font-weight: 600;">合规性：</span>
-                      <span style="color: #6e6e73;">这是利用官方提供的免费试用政策，不涉及盗刷或欺诈行为</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </main>
   </div>
 
@@ -3057,8 +3426,26 @@
       </div>
       
       <div class="register-modal-body">
+        <!-- 配置区域 -->
+        <div id="registerConfigSection" style="margin-bottom: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+            <div>
+              <label style="display: block; font-size: 13px; font-weight: 500; color: #1d1d1f; margin-bottom: 6px;">注册数量</label>
+              <input type="number" id="registerCount" value="1" min="1" max="50" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 13px; font-weight: 500; color: #1d1d1f; margin-bottom: 6px;">并发线程</label>
+              <input type="number" id="registerThreads" value="1" min="1" max="10" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="startBatchRegister()" style="width: 100%; padding: 12px; font-size: 14px; justify-content: center;">
+            <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+            开始注册
+          </button>
+        </div>
+        
         <!-- 注册统计信息 -->
-        <div class="register-stats">
+        <div class="register-stats" id="registerStatsSection" style="display: none;">
           <div class="register-stat-item">
             <span class="stat-label">总数量:</span>
             <span class="stat-value" id="modalTotalCount">0</span>
@@ -3078,7 +3465,7 @@
         </div>
         
         <!-- 日志显示区域 -->
-        <div class="register-log-container">
+        <div class="register-log-container" id="registerLogSection" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #2d2d2d; border-bottom: 1px solid #444;">
             <span style="color: #d4d4d4; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">实时日志</span>
             <button 
@@ -3095,7 +3482,7 @@
         </div>
         
         <!-- 底部按钮 -->
-        <div class="register-modal-footer">
+        <div class="register-modal-footer" id="registerFooterSection" style="display: none;">
           <button class="btn btn-danger" id="modalCancelBtn" onclick="cancelBatchRegister()">
             <i data-lucide="x-circle" style="width: 16px; height: 16px;"></i>
             取消注册
@@ -3111,51 +3498,30 @@
 
   <!-- 登录获取 Token 弹窗 -->
   <div id="loginTokenModal" class="modal-overlay" style="display:none;">
-    <div class="modal-dialog register-modal" onclick="event.stopPropagation()">
-      <div class="register-modal-header">
+    <div class="modal-dialog modern-modal" style="max-width: 360px;" onclick="event.stopPropagation()">
+      <div class="modern-modal-header" style="padding: 14px 16px;">
         <div class="modal-title-row">
-          <i data-lucide="key" style="width: 24px; height: 24px; color: #007aff;"></i>
-          <h3 class="modal-title">登录获取 Token</h3>
+          <i data-lucide="key" style="width: 16px; height: 16px; color: #007aff;"></i>
+          <h3 style="margin: 0; font-size: 14px; font-weight: 600;">获取 Token</h3>
         </div>
-        <button class="modal-close-btn" onclick="closeLoginTokenModal()" title="关闭">
-          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+        <button class="modal-close-btn" onclick="closeLoginTokenModal()" style="width: 24px; height: 24px;">
+          <i data-lucide="x" style="width: 14px; height: 14px;"></i>
         </button>
       </div>
       
-      <div class="register-modal-body">
+      <div class="modern-modal-body" style="padding: 16px;">
         <!-- 账号信息 -->
-        <div class="register-stats">
-          <div class="register-stat-item" style="flex: 1;">
-            <span class="stat-label">账号:</span>
-            <span class="stat-value" id="loginTokenEmail" style="font-size: 13px;">-</span>
-          </div>
-          <div class="register-stat-item">
-            <span class="stat-label">状态:</span>
-            <span class="stat-value" id="loginTokenStatus">等待中</span>
-          </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 12px;">
+          <span id="loginTokenEmail" style="color: var(--text-main); font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</span>
+          <span id="loginTokenStatus" style="color: #007aff; font-weight: 600;">等待中</span>
         </div>
         
         <!-- 日志显示区域 -->
-        <div class="register-log-container">
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #2d2d2d; border-bottom: 1px solid #444;">
-            <span style="color: #d4d4d4; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">实时日志</span>
-            <button 
-              onclick="copyLoginTokenLog()" 
-              style="background: #007aff; border: none; color: white; padding: 6px 14px; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0, 122, 255, 0.3);"
-              onmouseover="this.style.background='#0051d5'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 3px 6px rgba(0, 122, 255, 0.4)'"
-              onmouseout="this.style.background='#007aff'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(0, 122, 255, 0.3)'"
-              title="复制全部日志到剪贴板">
-              <i data-lucide="copy" style="width: 13px; height: 13px;"></i>
-              复制日志
-            </button>
-          </div>
-          <div class="register-log" id="loginTokenLog"></div>
-        </div>
+        <div id="loginTokenLog" style="max-height: 150px; overflow-y: auto; background: #18181b; border-radius: 6px; padding: 8px 10px; font-family: 'SF Mono', Monaco, monospace; font-size: 10px; color: #a1a1aa; line-height: 1.5;"></div>
       </div>
       
-      <div class="register-modal-footer">
-        <button class="btn btn-secondary" onclick="closeLoginTokenModal()">
-          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+      <div class="modern-modal-footer" style="padding: 12px 16px;">
+        <button class="btn btn-secondary" onclick="closeLoginTokenModal()" style="font-size: 12px; padding: 6px 16px;">
           关闭
         </button>
       </div>
@@ -3168,7 +3534,7 @@
       <div class="modern-modal-header">
         <div class="modal-title-row">
           <i data-lucide="user-plus" style="width: 24px; height: 24px; color: #007aff;"></i>
-          <h3 class="modal-title" data-i18n="addAccountTitle">添加账号</h3>
+          <h3 class="modal-title">添加账号</h3>
         </div>
         <button class="modal-close-btn" onclick="hideAddAccountForm()" title="关闭">
           <i data-lucide="x" style="width: 20px; height: 20px;"></i>
@@ -3177,44 +3543,21 @@
       
       <div class="modern-modal-body">
         <div class="form-group">
-          <label data-i18n="email">
-            <i data-lucide="mail" style="width: 16px; height: 16px; margin-right: 6px;"></i>
-            邮箱地址
-          </label>
+          <label>邮箱地址</label>
           <input type="email" id="manualEmail" placeholder="请输入邮箱地址" autocomplete="off">
         </div>
         
         <div class="form-group">
-          <label data-i18n="password">
-            <i data-lucide="lock" style="width: 16px; height: 16px; margin-right: 6px;"></i>
-            密码
-          </label>
+          <label>密码</label>
           <input type="text" id="manualPassword" placeholder="请输入密码" autocomplete="off">
-        </div>
-        
-        <div class="form-group">
-          <label>
-            <i data-lucide="key" style="width: 16px; height: 16px; margin-right: 6px;"></i>
-            API Key（可选）
-          </label>
-          <input type="text" id="manualApiKey" placeholder="请输入 API Key（可选）" autocomplete="off">
-          <div class="form-tip" style="margin-top: 6px;">
-            <i data-lucide="info" style="width: 12px; height: 12px;"></i>
-            <span>如果有 API Key，可以在此输入，否则留空</span>
-          </div>
-        </div>
-        
-        <div class="form-tip">
-          <i data-lucide="info" style="width: 14px; height: 14px;"></i>
-          <span>添加的账号将保存在本地，请确保信息准确</span>
         </div>
       </div>
       
       <div class="modern-modal-footer">
-        <button class="btn btn-secondary" onclick="hideAddAccountForm()" data-i18n="cancel">
+        <button class="btn btn-secondary" onclick="hideAddAccountForm()">
           取消
         </button>
-        <button class="btn btn-primary" onclick="addManualAccount()" data-i18n="add">
+        <button class="btn btn-primary" onclick="addManualAccount()">
           <i data-lucide="check" style="width: 16px; height: 16px;"></i>
           添加账号
         </button>
@@ -3222,35 +3565,80 @@
     </div>
   </div>
 
-  <!-- 语言设置弹窗 -->
-  <div id="languageModal" class="modal-overlay" style="display: none;" onclick="closeLanguageModal()">
-    <div class="modal-dialog" style="max-width: 400px; width: 90%;" onclick="event.stopPropagation()">
+  <!-- 搜索账号弹窗 -->
+  <div id="searchAccountModal" class="modal-overlay" onclick="hideSearchAccountModal()">
+    <div class="modal-dialog modern-modal" style="max-width: 500px;" onclick="event.stopPropagation()">
       <div class="modern-modal-header">
         <div class="modal-title-row">
-          <i data-lucide="languages" style="width: 24px; height: 24px; color: #007aff;"></i>
-          <h3 class="modal-title">语言设置</h3>
+          <i data-lucide="search" style="width: 24px; height: 24px; color: #007aff;"></i>
+          <h3 class="modal-title">搜索账号</h3>
         </div>
-        <button class="modal-close-btn" onclick="closeLanguageModal()" title="关闭">
+        <button class="modal-close-btn" onclick="hideSearchAccountModal()" title="关闭">
           <i data-lucide="x" style="width: 20px; height: 20px;"></i>
         </button>
       </div>
       
-      <div class="modern-modal-body" style="padding: 24px;">
-        <div class="form-group">
-          <label>
-            <i data-lucide="globe-2" style="width: 16px; height: 16px;"></i>
-            选择语言
-          </label>
-          <select id="modalLanguageSelect" onchange="changeLanguageFromModal()" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #d1d1d6; border-radius: 8px; background: white; cursor: pointer;">
-            <option value="zh-CN">简体中文</option>
-            <option value="en">English</option>
-          </select>
+      <div class="modern-modal-body">
+        <div class="modern-form-group">
+          <label class="modern-label">搜索关键词</label>
+          <input type="text" id="searchAccountInput" class="modern-input" placeholder="输入邮箱或账号类型（如 Pro、Free）" oninput="performAccountSearch()" autofocus>
+          <div class="form-tip" style="margin-top: 8px;">
+            <i data-lucide="info" style="width: 14px; height: 14px;"></i>
+            <span>支持搜索邮箱、账号类型（Pro/Free/Enterprise/Teams/Trial）</span>
+          </div>
         </div>
         
-        <div class="form-tip" style="margin-top: 12px;">
-          <i data-lucide="info" style="width: 14px; height: 14px;"></i>
-          <span>语言设置将立即生效</span>
+        <!-- 搜索结果 -->
+        <div id="searchResultsContainer" style="margin-top: 16px; max-height: 300px; overflow-y: auto;">
+          <div id="searchResults" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- 搜索结果会动态填充 -->
+          </div>
         </div>
+      </div>
+      
+      <div class="modern-modal-footer">
+        <button class="btn btn-secondary" onclick="hideSearchAccountModal()">
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          关闭
+        </button>
+        <button class="btn btn-primary" onclick="clearSearchAndShowAll()">
+          <i data-lucide="list" style="width: 16px; height: 16px;"></i>
+          显示全部
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自定义确认弹窗 -->
+  <div id="customConfirmModal" class="modal-overlay" style="z-index: 10001;">
+    <div class="modal-dialog modern-modal" style="max-width: 400px;" onclick="event.stopPropagation()">
+      <div class="modern-modal-header">
+        <div class="modal-title-row">
+          <div id="confirmIconContainer" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #ff3b30 0%, #ff6b6b 100%); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: white;"></i>
+          </div>
+          <h3 class="modal-title" id="confirmTitle">确认删除</h3>
+        </div>
+      </div>
+      
+      <div class="modern-modal-body" style="text-align: center; padding: 20px 24px;">
+        <p id="confirmMessage" style="margin: 0; font-size: 14px; color: var(--text-main); line-height: 1.6;">
+          确定要执行此操作吗？
+        </p>
+        <p id="confirmSubMessage" style="margin: 12px 0 0; font-size: 12px; color: #ff3b30; font-weight: 500;">
+          此操作无法撤销！
+        </p>
+      </div>
+      
+      <div class="modern-modal-footer" style="justify-content: center; gap: 12px;">
+        <button class="btn btn-secondary" onclick="handleConfirmCancel()" style="min-width: 100px;">
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+          取消
+        </button>
+        <button class="btn" id="confirmActionBtn" onclick="handleConfirmAction()" style="min-width: 100px; background: linear-gradient(135deg, #ff3b30 0%, #ff6b6b 100%); color: white; border: none;">
+          <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+          <span id="confirmActionText">删除</span>
+        </button>
       </div>
     </div>
   </div>
@@ -3296,7 +3684,7 @@
       </div>
       
       <div class="modern-modal-footer">
-        <button class="btn btn-secondary" id="versionCloseBtn" onclick="closeVersionUpdateModal()" style="display: none;">
+        <button class="btn btn-secondary" id="versionCloseBtn" style="display: none;">
           稍后更新
         </button>
         <button class="btn btn-primary" id="versionDownloadBtn" onclick="openDownloadUrl()">
@@ -3309,61 +3697,57 @@
 
   <!-- 批量获取Token进度弹窗 -->
   <div id="batchTokenProgressModal" class="modal-overlay" style="display: none;">
-    <div class="modal-dialog modern-modal" style="max-width: 600px; width: 90%;" onclick="event.stopPropagation()">
-      <div class="modern-modal-header">
+    <div class="modal-dialog modern-modal" style="max-width: 360px;" onclick="event.stopPropagation()">
+      <div class="modern-modal-header" style="padding: 14px 16px;">
         <div class="modal-title-row">
-          <i data-lucide="key" style="width: 20px; height: 20px; color: #007aff;"></i>
-          <h3 style="margin: 0; font-size: 17px; font-weight: 600; color: #1d1d1f;">批量获取Token</h3>
+          <i data-lucide="key" style="width: 16px; height: 16px; color: #007aff;"></i>
+          <h3 style="margin: 0; font-size: 14px; font-weight: 600;">获取 Token</h3>
         </div>
+        <button class="modal-close-btn" onclick="closeBatchTokenProgressModal()" style="width: 24px; height: 24px;">
+          <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+        </button>
       </div>
       
-      <div class="modern-modal-body" style="padding: 24px;">
-        <!-- 进度信息 -->
-        <div style="margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-size: 14px; color: #1d1d1f; font-weight: 500;">处理进度</span>
-            <span id="batchTokenProgressText" style="font-size: 14px; color: #007aff; font-weight: 600;">0 / 0</span>
+      <div class="modern-modal-body" style="padding: 16px;">
+        <!-- 进度条 -->
+        <div style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+            <span id="batchTokenCurrentEmail" style="color: var(--text-main); font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">等待开始...</span>
+            <span id="batchTokenProgressText" style="color: #007aff; font-weight: 600;">0/0</span>
           </div>
-          <div class="progress-bar" style="height: 8px; background: #f5f5f7; border-radius: 4px; overflow: hidden;">
-            <div id="batchTokenProgressFill" class="progress-fill" style="height: 100%; background: linear-gradient(90deg, #007aff, #5ac8fa); transition: width 0.3s ease; width: 0%;"></div>
-          </div>
-        </div>
-
-        <!-- 当前处理账号 -->
-        <div style="margin-bottom: 20px; padding: 16px; background: #f5f5f7; border-radius: 12px;">
-          <div style="font-size: 12px; color: #86868b; margin-bottom: 8px;">当前处理</div>
-          <div id="batchTokenCurrentEmail" style="font-size: 14px; color: #1d1d1f; font-weight: 500; word-break: break-all;">等待开始...</div>
-          <div id="batchTokenCurrentStatus" style="font-size: 12px; color: #86868b; margin-top: 4px;"></div>
-        </div>
-
-        <!-- 统计信息 -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
-          <div style="padding: 12px; background: #e8f5e9; border-radius: 8px; text-align: center;">
-            <div style="font-size: 20px; font-weight: 600; color: #4caf50;" id="batchTokenSuccessCount">0</div>
-            <div style="font-size: 11px; color: #66bb6a; margin-top: 4px;">成功</div>
-          </div>
-          <div style="padding: 12px; background: #ffebee; border-radius: 8px; text-align: center;">
-            <div style="font-size: 20px; font-weight: 600; color: #f44336;" id="batchTokenFailCount">0</div>
-            <div style="font-size: 11px; color: #ef5350; margin-top: 4px;">失败</div>
-          </div>
-          <div style="padding: 12px; background: #e3f2fd; border-radius: 8px; text-align: center;">
-            <div style="font-size: 20px; font-weight: 600; color: #2196f3;" id="batchTokenTotalCount">0</div>
-            <div style="font-size: 11px; color: #42a5f5; margin-top: 4px;">总计</div>
+          <div style="height: 4px; background: #e5e5ea; border-radius: 2px; overflow: hidden;">
+            <div id="batchTokenProgressFill" style="height: 100%; background: #007aff; transition: width 0.3s; width: 0%;"></div>
           </div>
         </div>
 
-        <!-- 日志区域 -->
-        <div style="margin-bottom: 16px;">
-          <div style="font-size: 12px; color: #86868b; margin-bottom: 8px;">处理日志</div>
-          <div id="batchTokenLogContainer" style="max-height: 200px; overflow-y: auto; background: #1d1d1f; border-radius: 8px; padding: 12px; font-family: 'SF Mono', Monaco, monospace; font-size: 11px; color: #f5f5f7; line-height: 1.6;">
-            <div style="color: #86868b;">等待开始...</div>
+        <!-- 统计 -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div style="flex: 1; padding: 8px; background: #f0fdf4; border-radius: 6px; text-align: center;">
+            <span style="font-size: 16px; font-weight: 700; color: #22c55e;" id="batchTokenSuccessCount">0</span>
+            <span style="font-size: 10px; color: #86868b; margin-left: 2px;">成功</span>
+          </div>
+          <div style="flex: 1; padding: 8px; background: #fef2f2; border-radius: 6px; text-align: center;">
+            <span style="font-size: 16px; font-weight: 700; color: #ef4444;" id="batchTokenFailCount">0</span>
+            <span style="font-size: 10px; color: #86868b; margin-left: 2px;">失败</span>
+          </div>
+          <div style="flex: 1; padding: 8px; background: #eff6ff; border-radius: 6px; text-align: center;">
+            <span style="font-size: 16px; font-weight: 700; color: #3b82f6;" id="batchTokenTotalCount">0</span>
+            <span style="font-size: 10px; color: #86868b; margin-left: 2px;">总计</span>
           </div>
         </div>
+
+        <!-- 日志 -->
+        <div id="batchTokenLogContainer" style="max-height: 120px; overflow-y: auto; background: #18181b; border-radius: 6px; padding: 8px 10px; font-family: 'SF Mono', Monaco, monospace; font-size: 10px; color: #a1a1aa; line-height: 1.5;">
+          <div>正在启动...</div>
+        </div>
+        
+        <!-- 隐藏的状态元素 -->
+        <span id="batchTokenCurrentStatus" style="display: none;"></span>
       </div>
       
-      <div class="modern-modal-footer">
-        <button class="btn btn-secondary" id="batchTokenCloseBtn" onclick="closeBatchTokenProgressModal()" disabled>
-          关闭
+      <div class="modern-modal-footer" style="padding: 12px 16px;">
+        <button class="btn btn-secondary" id="batchTokenCloseBtn" onclick="closeBatchTokenProgressModal()" style="font-size: 12px; padding: 6px 16px;">
+          取消
         </button>
       </div>
     </div>
@@ -3386,25 +3770,6 @@
       }
     }
 
-    // 打开购买账号URL
-    function openPurchaseUrl() {
-      const purchaseUrl = 'https://pay.ldxp.cn/shop/windsurftool'; // 购买账号的URL
-      
-      // 使用 Electron 的 shell 模块打开外部链接
-      if (window.ipcRenderer) {
-        window.ipcRenderer.invoke('open-external-url', purchaseUrl)
-          .then(() => {
-            showCenterMessage('已在浏览器中打开购买页面', 'success', 2000);
-          })
-          .catch((error) => {
-            console.error('打开URL失败:', error);
-            showCenterMessage('打开购买页面失败', 'error', 2000);
-          });
-      } else {
-        // 备用方案：直接打开链接
-        window.open(purchaseUrl, '_blank');
-      }
-    }
     
     // 视图切换函数
     function switchView(viewName) {
@@ -3431,43 +3796,39 @@
         targetView.classList.add('active');
       }
       
-      // 更新标题和图标
-      const titles = {
-        register: { icon: 'users', title: '账号管理', subtitle: '批量注册和管理 Windsurf 账号' },
-        virtualcard: { icon: 'credit-card', title: '虚拟卡管理', subtitle: '管理虚拟信用卡，自动绑定账号' },
-        reset: { icon: 'rotate-ccw', title: '重置机器ID', subtitle: '重置 Windsurf 和 Cursor 的机器指纹信息' },
-        settings: { icon: 'settings', title: '系统设置', subtitle: '配置邮箱域名和系统参数' },
-        tutorial: { icon: 'book-open', title: '使用教程', subtitle: '系统要求、快速开始和常见问题' },
-        sponsor: { icon: 'heart', title: '赞助支持', subtitle: '支持项目持续发展，感谢您的每一份支持' }
-      };
-      
-      const viewInfo = titles[viewName];
-      if (viewInfo) {
-        document.getElementById('viewTitle').textContent = viewInfo.title;
-        document.getElementById('viewSubtitle').textContent = viewInfo.subtitle;
-        
-        // 更新图标
-        const iconElement = document.getElementById('viewTitleIcon');
-        iconElement.setAttribute('data-lucide', viewInfo.icon);
-        lucide.createIcons();
-      }
-      
       // 调用原有的switchTab逻辑来处理页面特定的初始化
       if (typeof window.switchTabLogic === 'function') {
         window.switchTabLogic(viewName);
       }
+
+      // 悬浮保存按钮控制
+      const settingsSaveBtn = document.querySelector('#settings .save-config-btn');
+      const autoBindSaveBtn = document.querySelector('.autoBindSaveBtn');
       
-      // 如果切换到设置页面，加载配置文件路径并显示悬浮保存按钮
-      const floatingSaveBtn = document.querySelector('.save-btn');
+      // 隐藏所有悬浮按钮
+      if (settingsSaveBtn) settingsSaveBtn.style.display = 'none';
+      if (autoBindSaveBtn) autoBindSaveBtn.style.display = 'none';
+      
+      // 如果切换到设置页面
       if (viewName === 'settings') {
         loadConfigPath();
-        if (floatingSaveBtn) floatingSaveBtn.style.display = 'flex';
+        if (settingsSaveBtn) settingsSaveBtn.style.display = 'flex';
         // 重新初始化域名管理器
         if (typeof initDomainManager === 'function') {
           initDomainManager();
         }
-      } else {
-        if (floatingSaveBtn) floatingSaveBtn.style.display = 'none';
+      }
+      
+      // 如果切换到自动绑卡页面，初始化
+      if (viewName === 'autoBindCard') {
+        if (autoBindSaveBtn) autoBindSaveBtn.style.display = 'flex';
+        if (typeof AutoBindCard !== 'undefined' && AutoBindCard.onViewSwitch) {
+          AutoBindCard.onViewSwitch();
+        }
+        // 初始化图标
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
       }
     }
     
@@ -3507,18 +3868,18 @@
     async function copyConfigPath() {
       const configPathInput = document.getElementById('configPath');
       if (!configPathInput || !configPathInput.value) {
-        alert('配置文件路径未加载');
+        showCustomAlert('配置文件路径未加载', 'warning');
         return;
       }
       
       try {
         await navigator.clipboard.writeText(configPathInput.value);
-        alert('路径已复制到剪贴板');
+        showCustomAlert('路径已复制到剪贴板', 'success');
       } catch (error) {
         // 降级方案：使用传统方法
         configPathInput.select();
         document.execCommand('copy');
-        alert('路径已复制到剪贴板');
+        showCustomAlert('路径已复制到剪贴板', 'success');
       }
     }
     
@@ -3526,100 +3887,26 @@
       try {
         const result = await ipcRenderer.invoke('open-config-folder');
         if (!result.success) {
-          alert('打开文件夹失败: ' + (result.error || '未知错误'));
+          showCustomAlert('打开文件夹失败: ' + (result.error || '未知错误'), 'error');
         }
       } catch (error) {
         console.error('打开配置文件夹失败:', error);
-        alert('打开文件夹失败: ' + error.message);
+        showCustomAlert('打开文件夹失败: ' + error.message, 'error');
       }
     }
     
-    // 重置机器
-    async function resetMachine() {
-      const confirmMsg = getCurrentLanguage() === 'zh-CN' 
-        ? '确定要重置机器吗？\n\n此操作将：\n• 清除机器指纹\n• 重置设备信息\n• 需要重启应用生效\n\n是否继续？'
-        : 'Are you sure you want to reset the machine?\n\nThis will:\n• Clear machine fingerprint\n• Reset device information\n• Require app restart to take effect\n\nContinue?';
-      
-      if (!confirm(confirmMsg)) {
-        return;
+    // 打开外部链接
+    function openExternalLink(url) {
+      if (typeof shell !== 'undefined') {
+        shell.openExternal(url);
+      } else if (window.ipcRenderer) {
+        window.ipcRenderer.invoke('open-external-url', url);
       }
-      
-      try {
-        const result = await ipcRenderer.invoke('reset-machine');
-        
-        if (result.success) {
-          const successMsg = getCurrentLanguage() === 'zh-CN'
-            ? '机器重置成功！\n\n应用将在3秒后自动重启...'
-            : 'Machine reset successful!\n\nApp will restart in 3 seconds...';
-          
-          alert(successMsg);
-          
-          // 3秒后重启应用
-          setTimeout(() => {
-            ipcRenderer.invoke('restart-app');
-          }, 3000);
-        } else {
-          const errorMsg = getCurrentLanguage() === 'zh-CN'
-            ? `重置失败: ${result.error || '未知错误'}`
-            : `Reset failed: ${result.error || 'Unknown error'}`;
-          alert(errorMsg);
-        }
-      } catch (error) {
-        console.error('重置机器错误:', error);
-        const errorMsg = getCurrentLanguage() === 'zh-CN'
-          ? `重置失败: ${error.message}`
-          : `Reset failed: ${error.message}`;
-        alert(errorMsg);
-      }
-    }
-    
-    // 语言设置弹窗控制
-    function openLanguageModal() {
-      const modal = document.getElementById('languageModal');
-      const modalSelect = document.getElementById('modalLanguageSelect');
-      const currentLang = getCurrentLanguage();
-      
-      if (modalSelect) {
-        modalSelect.value = currentLang;
-      }
-      
-      modal.style.display = 'flex';
-      
-      // 初始化图标
-      if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-      }
-    }
-    
-    function closeLanguageModal() {
-      const modal = document.getElementById('languageModal');
-      modal.style.display = 'none';
-    }
-    
-    async function changeLanguageFromModal() {
-      const modalSelect = document.getElementById('modalLanguageSelect');
-      if (!modalSelect) return;
-      
-      const newLang = modalSelect.value;
-      
-      // 保存到 localStorage
-      setLanguage(newLang);
-      
-      // 通过 IPC 保存到文件
-      try {
-        await ipcRenderer.invoke('save-language', newLang);
-      } catch (err) {
-        console.error('保存语言设置失败:', err);
-      }
-      
-      // 更新UI
-      updateUILanguage();
-      
-      // 关闭弹窗
-      closeLanguageModal();
     }
     
     // 批量注册弹窗控制
+    let batchRegisterEscHandler = null;
+    
     function openBatchRegisterModal() {
       const modal = document.getElementById('batchRegisterModal');
       const logEl = document.getElementById('registerLog');
@@ -3635,21 +3922,46 @@
       document.getElementById('modalFailCount').textContent = '0';
       document.getElementById('modalProgress').textContent = '0%';
       
+      // 显示配置区域，隐藏进度区域
+      document.getElementById('registerConfigSection').style.display = 'block';
+      document.getElementById('registerStatsSection').style.display = 'none';
+      document.getElementById('registerLogSection').style.display = 'none';
+      document.getElementById('registerFooterSection').style.display = 'none';
+      
       // 显示弹窗
       modal.style.display = 'flex';
+      
+      // 添加 ESC 键关闭监听
+      batchRegisterEscHandler = function(e) {
+        if (e.key === 'Escape') {
+          closeBatchRegisterModal();
+        }
+      };
+      document.addEventListener('keydown', batchRegisterEscHandler);
       
       // 初始化图标
       if (typeof lucide !== 'undefined') {
         lucide.createIcons();
       }
-      
-      // 开始注册
-      startBatchRegister();
+    }
+    
+    // 开始注册时切换到进度视图
+    function showRegisterProgress() {
+      document.getElementById('registerConfigSection').style.display = 'none';
+      document.getElementById('registerStatsSection').style.display = 'grid';
+      document.getElementById('registerLogSection').style.display = 'block';
+      document.getElementById('registerFooterSection').style.display = 'flex';
     }
     
     function closeBatchRegisterModal() {
       const modal = document.getElementById('batchRegisterModal');
       modal.style.display = 'none';
+      
+      // 移除 ESC 键监听
+      if (batchRegisterEscHandler) {
+        document.removeEventListener('keydown', batchRegisterEscHandler);
+        batchRegisterEscHandler = null;
+      }
     }
     
     // 登录获取 Token 弹窗控制
@@ -3698,7 +4010,10 @@
     // 添加日志到弹窗
     function addRegisterLog(message, type = 'info') {
       const logEl = document.getElementById('registerLog');
-      if (!logEl) return;
+      if (!logEl) {
+        console.warn('[addRegisterLog] registerLog 元素不存在');
+        return;
+      }
       
       const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
       const logEntry = document.createElement('div');
@@ -3710,12 +4025,11 @@
       else if (type === 'warning') colorClass = 'log-warning';
       
       logEntry.innerHTML = `<span class="log-timestamp">[${timestamp}]</span><span class="${colorClass}">${message}</span>`;
-      // 存储纯文本内容用于复制
       logEntry.setAttribute('data-log-text', `[${timestamp}] ${message}`);
       logEl.appendChild(logEntry);
       
-      // 自动滚动到底部
-      logEl.scrollTop = logEl.scrollHeight;
+      // 立即滚动到底部
+      logEl.scrollTop = logEl.scrollHeight + 1000;
     }
     
     // 复制注册日志
@@ -3769,9 +4083,6 @@
         document.body.removeChild(textarea);
       }
     }
-    
-    // 添加重置日志
-    // 重置机器ID相关函数已移至 js/resetMachine.js
     
     // 更新注册统计
     function updateRegisterStats(total, success, fail, progress) {
@@ -3839,7 +4150,7 @@
         }, 1000);
       }).catch(err => {
         console.error('复制失败:', err);
-        alert('复制失败，请手动复制');
+        showCustomAlert('复制失败，请手动复制', 'error');
       });
     }
     
@@ -3864,31 +4175,8 @@
         }, 1000);
       }).catch(err => {
         console.error('复制失败:', err);
-        alert('复制失败，请手动复制');
+        showCustomAlert('复制失败，请手动复制', 'error');
       });
-    }
-    
-    // IMAP授权码显示/隐藏切换
-    function toggleImapPassword() {
-      const input = document.getElementById('imapPassword');
-      const icon = document.getElementById('imapPasswordIcon');
-      
-      if (!input || !icon) return;
-      
-      if (input.type === 'password') {
-        // 显示密码
-        input.type = 'text';
-        icon.setAttribute('data-lucide', 'eye-off');
-      } else {
-        // 隐藏密码
-        input.type = 'password';
-        icon.setAttribute('data-lucide', 'eye');
-      }
-      
-      // 重新初始化图标
-      if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-      }
     }
     
     // 下拉菜单控制

@@ -56,7 +56,7 @@ class SQLiteHelper {
       // 备份数据库
       const backupPath = dbPath + '.backup.' + Date.now();
       await fs.copyFile(dbPath, backupPath);
-      console.log('✅ 数据库已备份:', backupPath);
+      console.log('数据库已备份:', backupPath);
       
       const buffer = await fs.readFile(dbPath);
       const valueStr = typeof value === 'object' ? JSON.stringify(value) : value;
@@ -67,11 +67,11 @@ class SQLiteHelper {
       
       if (keyIndex === -1) {
         // key 不存在，需要插入（简单实现：追加到文件末尾）
-        console.warn('⚠️ Key 不存在，使用追加模式');
+        console.warn('Key 不存在，使用追加模式');
         const newEntry = Buffer.from(`\n${key}\n${valueStr}\n`, 'utf8');
         const newBuffer = Buffer.concat([buffer, newEntry]);
         await fs.writeFile(dbPath, newBuffer);
-        console.log(`✅ 已追加数据: ${key}`);
+        console.log(`已追加数据: ${key}`);
         return true;
       }
       
@@ -106,11 +106,11 @@ class SQLiteHelper {
         }
         
         await fs.writeFile(dbPath, newBuffer);
-        console.log(`✅ 已更新数据: ${key}`);
+        console.log(`已更新数据: ${key}`);
         return true;
       }
       
-      console.warn('⚠️ 未找到旧值，使用追加模式');
+      console.warn('未找到旧值，使用追加模式');
       const newEntry = Buffer.from(`\n${valueStr}\n`, 'utf8');
       const newBuffer = Buffer.concat([buffer, newEntry]);
       await fs.writeFile(dbPath, newBuffer);

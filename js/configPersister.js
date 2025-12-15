@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
+const CONSTANTS = require('./constants');
 
 class ConfigPersister {
   constructor() {
@@ -57,7 +58,7 @@ class ConfigPersister {
           tokenToUse = account.accessToken;
           console.log('[加密] 使用 accessToken');
         } else {
-          console.log('[加密] ⚠️ 未找到 Firebase token，使用 API Key 作为备用');
+          console.log('[加密] 未找到 Firebase token，使用 API Key 作为备用');
         }
         
         const sessionsData = [{
@@ -74,7 +75,7 @@ class ConfigPersister {
         const jsonString = JSON.stringify(sessionsData);
         const encrypted = safeStorage.encryptString(jsonString);
         
-        console.log('[加密] ✅ Sessions 数据加密成功');
+        console.log('[加密] Sessions 数据加密成功');
         console.log(`[加密] Buffer 长度: ${encrypted.length} 字节`);
         console.log(`[加密] 使用的 token: ${tokenToUse.substring(0, 20)}...`);
         
@@ -84,7 +85,7 @@ class ConfigPersister {
         app.setPath('userData', originalUserData);
       }
     } catch (error) {
-      console.error('[加密] ❌ 加密失败:', error);
+      console.error('[加密] 加密失败:', error);
       throw error;
     }
   }
@@ -125,13 +126,13 @@ class ConfigPersister {
         const data = db.export();
         await fs.writeFile(paths.dbPath, data);
         
-        console.log(`[数据库] ✅ 写入成功: ${key}`);
+        console.log(`[数据库] 写入成功: ${key}`);
         return true;
       } finally {
         db.close();
       }
     } catch (error) {
-      console.error(`[数据库] ❌ 写入失败 ${key}:`, error);
+      console.error(`[数据库] 写入失败 ${key}:`, error);
       return false;
     }
   }
@@ -141,8 +142,8 @@ class ConfigPersister {
    */
   async getFirebaseTokens(refreshToken) {
     const axios = require('axios');
-    const FIREBASE_API_KEY = 'AIzaSyDsOl-1XpT5err0Tcnx8FFod1H8gVGIycY';
-    const WORKER_URL = 'https://jolly-leaf-328a.92xh6jhdym.workers.dev';
+    const FIREBASE_API_KEY = CONSTANTS.FIREBASE_API_KEY;
+    const WORKER_URL = CONSTANTS.WORKER_URL;
     
     try {
       console.log('[Firebase] 正在获取 Firebase tokens...');
@@ -158,11 +159,12 @@ class ConfigPersister {
           headers: {
             'Content-Type': 'application/json',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            // 'X-Secret-Key': CONSTANTS.WORKER_SECRET_KEY  // 已禁用密钥验证
           }
         }
       );
       
-      console.log('[Firebase] ✅ 成功获取 Firebase tokens');
+      console.log('[Firebase] 成功获取 Firebase tokens');
       return {
         idToken: response.data.id_token,
         accessToken: response.data.access_token || response.data.id_token,
@@ -170,7 +172,10 @@ class ConfigPersister {
         expiresIn: parseInt(response.data.expires_in)
       };
     } catch (error) {
-      console.error('[Firebase] ❌ 获取失败:', error.message);
+      console.error('[Firebase] 获取失败:', error.message);
+      if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+        throw new Error('无法连接到中转服务器，请检查网络连接或开启代理');
+      }
       throw error;
     }
   }
@@ -189,9 +194,9 @@ class ConfigPersister {
           const firebaseTokens = await this.getFirebaseTokens(account.refreshToken);
           account.idToken = firebaseTokens.idToken;
           account.accessToken = firebaseTokens.accessToken;
-          console.log('[持久化] ✅ 成功获取 Firebase tokens');
+          console.log('[持久化] 成功获取 Firebase tokens');
         } catch (error) {
-          console.log('[持久化] ⚠️ 获取 Firebase tokens 失败，将使用 API Key 作为备用');
+          console.log('[持久化] 获取 Firebase tokens 失败，将使用 API Key 作为备用');
         }
       }
       
@@ -222,7 +227,7 @@ class ConfigPersister {
       await this.writeToDatabase('codeium.windsurf-windsurf_auth', account.name);
       
       this.writeCount++;
-      console.log(`[持久化] ✅ 第 ${this.writeCount} 次写入完成`);
+      console.log(`[持久化] 第 ${this.writeCount} 次写入完成`);
       
       // 保存最后写入的数据用于验证
       this.lastWrittenData = {
@@ -233,7 +238,7 @@ class ConfigPersister {
       
       return true;
     } catch (error) {
-      console.error('[持久化] ❌ 写入失败:', error);
+      console.error('[持久化] 写入失败:', error);
       return false;
     }
   }
@@ -256,29 +261,29 @@ class ConfigPersister {
         
         if (result.length > 0 && result[0].values.length > 0) {
           const authStatus = JSON.parse(result[0].values[0][0]);
-          console.log(`[验证] ✅ 当前登录: ${authStatus.email} (${authStatus.name})`);
+          console.log(`[验证] 当前登录: ${authStatus.email} (${authStatus.name})`);
           
           // 检查是否与最后写入的数据一致
           if (this.lastWrittenData) {
             if (authStatus.email === this.lastWrittenData.email) {
-              console.log('[验证] ✅ 数据一致，未被覆盖');
+              console.log('[验证] 数据一致，未被覆盖');
               return { success: true, authStatus };
             } else {
-              console.log('[验证] ⚠️ 数据不一致，可能被覆盖');
+              console.log('[验证] 数据不一致，可能被覆盖');
               return { success: false, authStatus };
             }
           }
           
           return { success: true, authStatus };
         } else {
-          console.log('[验证] ❌ 未检测到登录状态');
+          console.log('[验证] 未检测到登录状态');
           return { success: false };
         }
       } finally {
         db.close();
       }
     } catch (error) {
-      console.error('[验证] ❌ 验证失败:', error);
+      console.error('[验证] 验证失败:', error);
       return { success: false, error: error.message };
     }
   }
@@ -294,11 +299,11 @@ class ConfigPersister {
     } = options;
     
     if (this.isMonitoring) {
-      console.log('[监控] ⚠️ 已在监控中');
+      console.log('[监控] 已在监控中');
       return;
     }
     
-    console.log(`[监控] 🚀 开始监控模式 (间隔: ${interval}ms)`);
+    console.log(`[监控] 开始监控模式 (间隔: ${interval}ms)`);
     this.isMonitoring = true;
     this.writeCount = 0;
     
@@ -315,39 +320,39 @@ class ConfigPersister {
         
         if (!verifyResult.success || 
             (verifyResult.authStatus && verifyResult.authStatus.email !== account.email)) {
-          console.log('[监控] ⚠️ 检测到配置被覆盖，正在恢复...');
+          console.log('[监控] 检测到配置被覆盖，正在恢复...');
           
           // 重新写入
           const writeSuccess = await this.writeAccountData(account);
           
           if (writeSuccess) {
-            console.log('[监控] ✅ 配置已恢复');
+            console.log('[监控] 配置已恢复');
             retryCount = 0;
           } else {
             retryCount++;
-            console.log(`[监控] ❌ 恢复失败 (${retryCount}/${maxRetries})`);
+            console.log(`[监控] 恢复失败 (${retryCount}/${maxRetries})`);
             
             if (retryCount >= maxRetries) {
-              console.log('[监控] ❌ 达到最大重试次数，停止监控');
+              console.log('[监控] 达到最大重试次数，停止监控');
               this.stopMonitoring();
             }
           }
         } else {
-          console.log('[监控] ✅ 配置正常');
+          console.log('[监控] 配置正常');
           retryCount = 0;
         }
       } catch (error) {
-        console.error('[监控] ❌ 监控出错:', error);
+        console.error('[监控] 监控出错:', error);
         retryCount++;
         
         if (retryCount >= maxRetries) {
-          console.log('[监控] ❌ 错误过多，停止监控');
+          console.log('[监控] 错误过多，停止监控');
           this.stopMonitoring();
         }
       }
     }, interval);
     
-    console.log('[监控] ✅ 监控已启动');
+    console.log('[监控] 监控已启动');
   }
 
   /**
@@ -360,7 +365,7 @@ class ConfigPersister {
     }
     
     this.isMonitoring = false;
-    console.log('[监控] ⏹️ 监控已停止');
+    console.log('[监控]  监控已停止');
     console.log(`[监控] 📊 总共写入 ${this.writeCount} 次`);
   }
 
@@ -376,7 +381,7 @@ class ConfigPersister {
       const success = await this.writeAccountData(account);
       
       if (!success) {
-        console.log(`[强制写入] ❌ 第 ${i} 次失败`);
+        console.log(`[强制写入] 第 ${i} 次失败`);
       }
       
       if (i < times) {
@@ -387,10 +392,10 @@ class ConfigPersister {
     // 最终验证
     const finalVerify = await this.verifyLoginStatus();
     if (finalVerify.success && finalVerify.authStatus.email === account.email) {
-      console.log('[强制写入] ✅ 强制写入成功！');
+      console.log('[强制写入] 强制写入成功！');
       return true;
     } else {
-      console.log('[强制写入] ❌ 强制写入失败，请检查');
+      console.log('[强制写入] 强制写入失败，请检查');
       return false;
     }
   }

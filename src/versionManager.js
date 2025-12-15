@@ -88,7 +88,7 @@ class VersionManager {
     if (this.checkTimer) {
       clearInterval(this.checkTimer);
       this.checkTimer = null;
-      console.log('⏹️ 已停止定时版本检测');
+      console.log(' 已停止定时版本检测');
     }
   }
 
@@ -97,7 +97,7 @@ class VersionManager {
    */
   async performAutoCheck() {
     if (this.isChecking) {
-      console.log('⏳ 版本检测正在进行中，跳过本次检测');
+      console.log(' 版本检测正在进行中，跳过本次检测');
       return;
     }
 
@@ -123,7 +123,7 @@ class VersionManager {
       
       // 如果之前在维护模式，现在恢复了，触发恢复回调
       if (this.isInMaintenance) {
-        console.log('✅ 维护模式已结束，服务恢复正常');
+        console.log(' 维护模式已结束，服务恢复正常');
         this.isInMaintenance = false;
         if (this.onMaintenanceEndCallback) {
           this.onMaintenanceEndCallback();
@@ -160,13 +160,13 @@ class VersionManager {
         });
         
         // 维护模式不计入失败次数，但继续检测（间隔更短）
-        console.log('⏸️ 维护模式期间，将缩短检测间隔到2分钟');
+        console.log(' 维护模式期间，将缩短检测间隔到2分钟');
         this.setCheckInterval(2 * 60 * 1000); // 2分钟检查一次
         return;
       }
       
       this.failureCount++;
-      console.error(`❌ 自动版本检测失败 (${this.failureCount}/${this.maxFailures}):`, error.message);
+      console.error(` 自动版本检测失败 (${this.failureCount}/${this.maxFailures}):`, error.message);
       
       // 记录失败历史
       this.checkHistory.push({
@@ -177,7 +177,7 @@ class VersionManager {
       
       // API 无法访问 - 触发回调阻止使用软件
       if (this.onApiUnavailableCallback) {
-        console.error('❌ API 无法访问，触发阻止回调');
+        console.error(' API 无法访问，触发阻止回调');
         this.onApiUnavailableCallback({
           error: error.message,
           message: '无法连接到服务器，请检查网络连接。如果开启了代理/VPN，请关闭后重试。'
@@ -187,7 +187,7 @@ class VersionManager {
       // 如果连续失败次数过多，增加检测间隔
       if (this.failureCount >= this.maxFailures) {
         const newInterval = this.checkInterval * 2;
-        console.warn(`⚠️ 连续失败${this.maxFailures}次，将检测间隔调整为${newInterval / 1000 / 60}分钟`);
+        console.warn(` 连续失败${this.maxFailures}次，将检测间隔调整为${newInterval / 1000 / 60}分钟`);
         this.setCheckInterval(newInterval);
         this.failureCount = 0; // 重置失败计数
       }
@@ -208,7 +208,7 @@ class VersionManager {
       this.startAutoCheck(this.onUpdateCallback);
     }
     
-    console.log(`⏰ 检测间隔已设置为${interval / 1000 / 60}分钟`);
+    console.log(` 检测间隔已设置为${interval / 1000 / 60}分钟`);
   }
 
   /**
@@ -355,7 +355,7 @@ class VersionManager {
     
     // 防止超大版本号（每部分不超过 100）
     if (parseInt(major) > 100 || parseInt(minor) > 100 || parseInt(patch) > 100) {
-      console.warn(`⚠️  版本号数值异常: ${version}`);
+      console.warn(`  版本号数值异常: ${version}`);
       return false;
     }
     
@@ -396,8 +396,8 @@ class VersionManager {
       
       // 验证服务器返回的版本号格式
       if (!this.isValidVersion(versionInfo.version)) {
-        console.warn(`⚠️ 服务器返回的版本号格式异常: ${versionInfo.version}`);
-        console.warn(`⚠️ 忽略异常版本号，软件继续正常使用`);
+        console.warn(` 服务器返回的版本号格式异常: ${versionInfo.version}`);
+        console.warn(` 忽略异常版本号，软件继续正常使用`);
         
         // 返回一个安全的默认值，表示当前版本是最新的
         return {
@@ -418,7 +418,7 @@ class VersionManager {
       // 重要：如果服务端要求强制更新，绝对不能覆盖
       // 这可能是因为检测到非官方版本或其他安全问题
       if (versionInfo.forceUpdate) {
-        console.warn('⚠️  服务端要求强制更新，可能检测到版本异常');
+        console.warn('  服务端要求强制更新，可能检测到版本异常');
         // 保持服务端的所有设置，不做任何修改
       } else {
         // 只有在非强制更新的情况下，才使用客户端判断
@@ -431,14 +431,14 @@ class VersionManager {
         }
       }
       
-      console.log(`📦 最新版本: ${versionInfo.version}`);
-      console.log(`🔒 强制更新: ${versionInfo.forceUpdate ? '是' : '否'}`);
-      console.log(`✅ 版本支持: ${versionInfo.isSupported ? '是' : '否'}`);
+      console.log(` 最新版本: ${versionInfo.version}`);
+      console.log(`强制更新: ${versionInfo.forceUpdate ? '是' : '否'}`);
+      console.log(` 版本支持: ${versionInfo.isSupported ? '是' : '否'}`);
       
       if (versionInfo.hasUpdate) {
         console.log(`🆕 发现新版本: ${versionInfo.version}`);
       } else {
-        console.log(`✅ 当前版本已是最新`);
+        console.log(` 当前版本已是最新`);
       }
       
       return {
@@ -451,7 +451,7 @@ class VersionManager {
         serverInfo: versionInfo.serverInfo
       };
     } catch (error) {
-      console.error('❌ 检查版本更新失败:', error.message);
+      console.error(' 检查版本更新失败:', error.message);
       throw error;
     }
   }
@@ -551,7 +551,7 @@ class VersionManager {
     try {
       // 如果没有签名，暂时允许（向后兼容）
       if (!signature) {
-        console.warn('⚠️ API 响应没有签名，建议服务端添加签名验证');
+        console.warn(' API 响应没有签名，建议服务端添加签名验证');
         return true;
       }
       
@@ -567,7 +567,7 @@ class VersionManager {
       const isValid = calculatedSignature === signature;
       
       if (!isValid) {
-        console.error('❌ API 响应签名验证失败！可能存在中间人攻击');
+        console.error(' API 响应签名验证失败！可能存在中间人攻击');
         console.error('预期签名:', calculatedSignature);
         console.error('实际签名:', signature);
       }
@@ -587,14 +587,14 @@ class VersionManager {
   validateApiResponse(response) {
     // 检查 success 字段必须存在
     if (!('success' in response)) {
-      console.error(`❌ API 响应缺少必需字段: success`);
+      console.error(` API 响应缺少必需字段: success`);
       return false;
     }
     
     // 如果 success 为 true，则必须有 latest_version
     if (response.success === true) {
       if (!('latest_version' in response)) {
-        console.error(`❌ API 响应缺少必需字段: latest_version`);
+        console.error(` API 响应缺少必需字段: latest_version`);
         return false;
       }
     }
@@ -620,7 +620,7 @@ class VersionManager {
     let formatted = '';
     
     if (releaseNotes.title) {
-      formatted += `🔥 ${releaseNotes.title}\n\n`;
+      formatted += ` ${releaseNotes.title}\n\n`;
     }
     
     if (releaseNotes.date) {

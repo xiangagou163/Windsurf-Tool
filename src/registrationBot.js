@@ -1,11 +1,75 @@
-const { connect } = require('puppeteer-real-browser');
+const path = require('path');
+const Module = require('module');
+
+// 在打包环境中，从解压目录加载模块
+// 解决 ESM 动态导入在 asar 中的问题
+const isPackaged = __dirname.includes('app.asar');
+let connect;
+
+if (isPackaged) {
+  try {
+    // 计算解压模块的路径（使用绝对路径）
+    // __dirname 在 asar 中是 app.asar/src，需要替换为 app.asar.unpacked
+    const asarPath = __dirname.replace('app.asar', 'app.asar.unpacked');
+    const unpackedNodeModules = path.join(asarPath, '..', 'node_modules');
+    
+    console.log('[调试] __dirname:', __dirname);
+    console.log('[调试] unpackedNodeModules:', unpackedNodeModules);
+    
+    // 关键修复：将 unpacked node_modules 添加到 Node.js 模块搜索路径
+    // 这样所有的 require() 调用都会优先从 unpacked 目录查找
+    if (!module.paths.includes(unpackedNodeModules)) {
+      module.paths.unshift(unpackedNodeModules);
+      console.log('[调试] 已添加 unpacked 路径到模块搜索路径');
+    }
+    
+    // 修改全局模块解析，确保所有模块都从 unpacked 加载
+    const originalResolveFilename = Module._resolveFilename;
+    Module._resolveFilename = function(request, parent, isMain) {
+      // 对于所有 node_modules 中的模块，优先从 unpacked 目录查找
+      if (!request.startsWith('.') && !request.startsWith('/') && !path.isAbsolute(request)) {
+        try {
+          // 尝试从 unpacked 目录解析
+          const unpackedPath = path.join(unpackedNodeModules, request);
+          if (require('fs').existsSync(unpackedPath)) {
+            return originalResolveFilename.call(this, unpackedPath, parent, isMain);
+          }
+        } catch (e) {
+          // 继续使用原始解析
+        }
+      }
+      return originalResolveFilename.call(this, request, parent, isMain);
+    };
+    
+    // 直接使用绝对路径加载 puppeteer-real-browser
+    const puppeteerRealBrowserPath = path.join(unpackedNodeModules, 'puppeteer-real-browser');
+    
+    const prb = require(puppeteerRealBrowserPath);
+    connect = prb.connect;
+    console.log('从解压目录加载 puppeteer-real-browser 成功');
+    console.log('[调试] 加载路径:', puppeteerRealBrowserPath);
+  } catch (e) {
+    console.error('从解压目录加载失败:', e.message);
+    console.error('[调试] 错误堆栈:', e.stack);
+    // 回退到默认路径
+    connect = require('puppeteer-real-browser').connect;
+  }
+} else {
+  connect = require('puppeteer-real-browser').connect;
+}
 const { app } = require('electron'); // 导入electron的app模块
 const os = require('os'); // 导入os模块
 const crypto = require('crypto'); // 用于生成CDN Token
+const CONSTANTS = require('../js/constants'); // 导入全局常量配置
+
+// 实例计数器（用于生成唯一的用户数据目录）
+let instanceCounter = 0;
 
 class RegistrationBot {
-  constructor(config) {
+  constructor(config, saveAccountCallback = null) {
     this.config = config;
+    // 实例唯一ID（用于并发时区分不同浏览器实例）
+    this.instanceId = ++instanceCounter;
     // 自定义域名邮箱列表
     this.emailDomains = config.emailDomains || ['example.com'];
     // 邮箱编号计数器(1-999)
@@ -14,6 +78,8 @@ class RegistrationBot {
     this.isCancelled = false;
     // Chrome 路径缓存
     this.chromePathCache = null;
+    // 保存账号的回调函数（由主进程传入）
+    this.saveAccountCallback = saveAccountCallback;
     
     // CDN Token 鉴权配置（与versionManager保持一致）
     this.cdnAuthConfig = {
@@ -66,29 +132,33 @@ class RegistrationBot {
 
   /**
    * 生成域名邮箱
-   * 格式: 编号(1-999) + 随机字母数字组合
+   * 格式: 时间戳(后3位) + 随机字母数字(4位) + 计数器(1位) = 8位
    */
   async generateTempEmail() {
-    // 获取当前编号
-    const number = this.emailCounter;
+    // 使用时间戳后3位（确保短期内唯一）
+    const timestamp = Date.now().toString().slice(-3);
     
-    // 生成随机字母数字组合(8位)
+    // 生成随机字母数字组合(4位)
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let randomStr = '';
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 4; i++) {
       randomStr += chars[Math.floor(Math.random() * chars.length)];
     }
     
-    // 组合用户名: 编号 + 随机字符串
-    const username = `${number}${randomStr}`;
+    // 添加计数器作为额外保护（1位）
+    const counter = (this.emailCounter % 10).toString();
+    
+    // 组合用户名: 时间戳 + 随机字符串 + 计数器
+    // 例如: 922k3x91@domain.com (8位)
+    const username = `${timestamp}${randomStr}${counter}`;
     
     // 随机选择配置的域名
     const randomIndex = Math.floor(Math.random() * this.emailDomains.length);
     const domain = this.emailDomains[randomIndex];
     
-    // 递增计数器(1-999循环)
+    // 递增计数器
     this.emailCounter++;
-    if (this.emailCounter > 999) {
+    if (this.emailCounter > 9) {
       this.emailCounter = 1;
     }
     
@@ -278,7 +348,7 @@ class RegistrationBot {
         if (fs.existsSync(chromePath)) {
           const stats = fs.statSync(chromePath);
           if (stats.isFile() && stats.size > 0) {
-            this.log(`✓ 找到 Chrome: ${chromePath}`);
+            this.log(`找到 Chrome: ${chromePath}`);
             return true;
           }
         }
@@ -401,7 +471,7 @@ class RegistrationBot {
       }
     }
     
-    this.log('⚠ 未找到 Chrome，将使用系统默认路径');
+    this.log(' 未找到 Chrome，将使用系统默认路径');
     return null;
   }
 
@@ -423,7 +493,7 @@ class RegistrationBot {
         if (fs.existsSync(chromePath)) {
           const stats = fs.statSync(chromePath);
           if (stats.isFile() && stats.size > 0) {
-            this.log(`✓ 找到 Chrome: ${chromePath}`);
+            this.log(`找到 Chrome: ${chromePath}`);
             return true;
           }
         }
@@ -526,7 +596,7 @@ class RegistrationBot {
       }
     }
     
-    this.log('⚠ 未找到 Chrome，将使用系统默认路径');
+    this.log(' 未找到 Chrome，将使用系统默认路径');
     return null;
   }
 
@@ -536,7 +606,7 @@ class RegistrationBot {
   async registerAccount(logCallback) {
     this.logCallback = logCallback;
     let browser, page;
-    let cdpClient = null;
+    let userDataDir = null; // 每次调用独立的用户数据目录
     
     try {
       // 检查取消标志
@@ -559,6 +629,12 @@ class RegistrationBot {
       this.log(`检测到 ${isWindows ? 'Windows' : 'macOS'} 系统，正在查找 Chrome 浏览器...`);
       const chromePath = this.detectChromePath();
       
+      // 为每个任务创建独立的用户数据目录（解决多并发冲突问题）
+      const tempDir = os.tmpdir();
+      const uniqueId = `${Date.now()}_${this.instanceId}_${Math.random().toString(36).slice(2, 8)}`;
+      userDataDir = path.join(tempDir, 'windsurf-tool-chrome', `instance_${uniqueId}`);
+      this.log(`使用独立用户数据目录: instance_${uniqueId}`);
+      
       // 配置浏览器连接参数
       const connectOptions = {
         headless: false,
@@ -566,6 +642,7 @@ class RegistrationBot {
         turnstile: true,
         tf: true,
         timeout: 120000, // 增加超时时间到 120 秒
+        userDataDir: userDataDir, // 使用独立的用户数据目录
         args: [
           '--disable-blink-features=AutomationControlled',
           '--disable-features=IsolateOrigins,site-per-process',
@@ -608,7 +685,7 @@ class RegistrationBot {
       try {
         response = await connect(connectOptions);
       } catch (error) {
-        this.log(`❌ 浏览器连接失败: ${error.message}`);
+        this.log(`浏览器连接失败: ${error.message}`);
         if (error.message.includes('ECONNREFUSED')) {
           this.log('提示: Chrome 进程启动失败，可能原因:');
           this.log('  1. 端口被占用，请关闭其他 Chrome 实例');
@@ -671,7 +748,6 @@ class RegistrationBot {
           
           // 生成带鉴权的注册URL
           const registrationUrl = this.generateRegistrationUrl();
-          this.log(`访问注册页面: ${registrationUrl}`);
           
           await page.goto(registrationUrl, {
             waitUntil: 'domcontentloaded', // 改为更宽松的等待条件
@@ -695,169 +771,123 @@ class RegistrationBot {
         }
       }
       
-      await this.sleep(2000);
+      await this.sleep(1000);
       
       // 检查取消标志
       if (this.isCancelled) {
         throw new Error('注册已取消');
       }
       
-      // ========== 启动网络监听（优化版） ==========
-      this.log('启动网络监听，准备捕获 Token...');
-      
-      let capturedTokens = {
-        accessToken: null,
-        refreshToken: null,
-        idToken: null
-      };
-      
-      let tokenCaptured = false; // 标记是否已捕获
-      const pendingRequests = new Map(); // 跟踪待处理的请求
-      
-      // 在外部作用域定义 handler，以便在 finally 中访问
-      let loadingFinishedHandler = null;
-      let responseReceivedHandler = null;
-      
-      cdpClient = await page.target().createCDPSession();
-      await cdpClient.send('Network.enable');
-      
-      // 监听网络加载完成事件（更可靠）
-      loadingFinishedHandler = async (params) => {
-        const requestId = params.requestId;
-        
-        // 检查是否是我们关注的请求
-        if (!pendingRequests.has(requestId)) return;
-        
-        const url = pendingRequests.get(requestId);
-        pendingRequests.delete(requestId);
-        
-        // 如果已经捕获到 token，跳过
-        if (tokenCaptured) return;
-        
-        try {
-          // 添加超时保护
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('获取响应体超时')), 3000)
-          );
-          
-          const responsePromise = cdpClient.send('Network.getResponseBody', {
-            requestId: requestId
-          });
-          
-          const response = await Promise.race([responsePromise, timeoutPromise]);
-          
-          // 验证响应体是否为空
-          if (!response.body) {
-            return;
-          }
-          
-          // 尝试解析 JSON
-          let body;
-          try {
-            body = JSON.parse(response.body);
-          } catch (parseError) {
-            // 不是 JSON 格式，跳过
-            return;
-          }
-          
-          // 捕获 token（只捕获一次）
-          if (!tokenCaptured) {
-            if (body.idToken || body.id_token) {
-              capturedTokens.idToken = body.idToken || body.id_token;
-              capturedTokens.accessToken = body.idToken || body.id_token;
-              console.log('[Token捕获] ✅ 捕获到 access_token');
-            }
-            
-            if (body.refreshToken || body.refresh_token) {
-              capturedTokens.refreshToken = body.refreshToken || body.refresh_token;
-              console.log('[Token捕获] ✅ 捕获到 refresh_token');
-            }
-            
-            // 如果两个 token 都捕获到了，标记完成并移除监听器
-            if (capturedTokens.accessToken && capturedTokens.refreshToken) {
-              tokenCaptured = true;
-              this.log('✅ Token 捕获完成，停止网络监听');
-              
-              // 移除监听器，释放资源
-              cdpClient.off('Network.loadingFinished', loadingFinishedHandler);
-              cdpClient.off('Network.responseReceived', responseReceivedHandler);
-            }
-          }
-        } catch (error) {
-          // 记录详细错误信息
-          console.error(`[Token捕获] 获取响应体失败: ${error.message}`);
-        }
-      };
-      
-      // 监听网络响应（标记感兴趣的请求）
-      responseReceivedHandler = (params) => {
-        const url = params.response.url;
-        
-        // 只关注 Firebase token 请求
-        if (url.includes('securetoken.googleapis.com') || url.includes('identitytoolkit.googleapis.com')) {
-          pendingRequests.set(params.requestId, url);
-        }
-      };
-      
-      cdpClient.on('Network.loadingFinished', loadingFinishedHandler);
-      cdpClient.on('Network.responseReceived', responseReceivedHandler);
-      
       // ========== 第一步: 填写基本信息 ==========
       this.log('步骤1: 填写基本信息');
       
       // 等待表单加载
-      await page.waitForSelector('input', { timeout: 120000 });
-      await this.sleep(2000);
+      await page.waitForSelector('input', { timeout: 60000 });
+      await this.sleep(1500); // 优化：减少到 1.5 秒
       
-      // 填写所有输入框
+      this.log('开始填写表单字段...');
+      
+      // 填写所有输入框 - 改进的填写逻辑
       const allInputs = await page.$$('input');
+      this.log(`找到 ${allInputs.length} 个输入框`);
       
-      for (const input of allInputs) {
-        const type = await page.evaluate(el => el.type, input);
-        const name = await page.evaluate(el => el.name, input);
-        const placeholder = await page.evaluate(el => el.placeholder || '', input);
+      let emailFilled = false;
+      let firstNameFilled = false;
+      let lastNameFilled = false;
+      
+      for (let i = 0; i < allInputs.length; i++) {
+        const input = allInputs[i];
         
-        // 填写邮箱
-        if (type === 'email' || name === 'email' || placeholder.toLowerCase().includes('email')) {
-          await input.click({ clickCount: 3 });
-          await input.type(email, { delay: 50 });
-          this.log(`已填写邮箱: ${email}`);
-        }
-        // 填写名字
-        else if (name === 'firstName' || placeholder.toLowerCase().includes('first')) {
-          await input.click();
-          await input.type(firstName, { delay: 50 });
-          this.log(`已填写名字: ${firstName}`);
-        }
-        // 填写姓氏
-        else if (name === 'lastName' || placeholder.toLowerCase().includes('last')) {
-          await input.click();
-          await input.type(lastName, { delay: 50 });
-          this.log(`已填写姓氏: ${lastName}`);
+        try {
+          const type = await page.evaluate(el => el.type, input);
+          const name = await page.evaluate(el => el.name, input);
+          const placeholder = await page.evaluate(el => el.placeholder || '', input);
+          const id = await page.evaluate(el => el.id || '', input);
+          
+          this.log(`输入框 ${i+1}: type=${type}, name=${name}, placeholder=${placeholder}, id=${id}`);
+          
+          // 填写邮箱 - 更精确的匹配
+          if (!emailFilled && (type === 'email' || name === 'email' || 
+              placeholder.toLowerCase().includes('email') || 
+              id.toLowerCase().includes('email'))) {
+            await this.sleep(200);
+            await input.click({ clickCount: 3 }); // 三击选中所有内容
+            await this.sleep(100);
+            await input.type(email, { delay: 50 }); // 优化：加快输入速度
+            await this.sleep(100);
+            this.log(`已填写邮箱: ${email}`);
+            emailFilled = true;
+          }
+          // 填写名字
+          else if (!firstNameFilled && (name === 'firstName' || 
+                   placeholder.toLowerCase().includes('first') || 
+                   id.toLowerCase().includes('first'))) {
+            await this.sleep(200);
+            await input.click();
+            await this.sleep(100);
+            await input.type(firstName, { delay: 50 });
+            await this.sleep(100);
+            this.log(`已填写名字: ${firstName}`);
+            firstNameFilled = true;
+          }
+          // 填写姓氏
+          else if (!lastNameFilled && (name === 'lastName' || 
+                   placeholder.toLowerCase().includes('last') || 
+                   id.toLowerCase().includes('last'))) {
+            await this.sleep(200);
+            await input.click();
+            await this.sleep(100);
+            await input.type(lastName, { delay: 50 });
+            await this.sleep(100);
+            this.log(`已填写姓氏: ${lastName}`);
+            lastNameFilled = true;
+          }
+        } catch (err) {
+          this.log(`填写输入框 ${i+1} 时出错: ${err.message}`);
         }
       }
       
+      // 验证是否所有必填字段都已填写
+      if (!emailFilled) {
+        throw new Error('未能填写邮箱字段，请检查页面结构');
+      }
+      this.log(`表单填写完成: 邮箱=${emailFilled}, 名字=${firstNameFilled}, 姓氏=${lastNameFilled}`);
+      
       // 同意条款复选框
+      await this.sleep(500);
       const checkbox = await page.$('input[type="checkbox"]');
       if (checkbox) {
         const isChecked = await page.evaluate(el => el.checked, checkbox);
         if (!isChecked) {
+          await this.sleep(200);
           await checkbox.click();
-          this.log('已勾选同意条款');
+          await this.sleep(200);
+          // 验证是否勾选成功
+          const nowChecked = await page.evaluate(el => el.checked, checkbox);
+          this.log(`已勾选同意条款: ${nowChecked ? '成功' : '失败'}`);
+        } else {
+          this.log('条款复选框已勾选');
         }
       }
       
-      await this.sleep(1000);
+      await this.sleep(800); // 优化：减少等待时间
       
       // 点击Continue按钮
-      this.log('点击Continue按钮...');
-      const clicked = await this.clickButton(page, ['Continue', '继续', 'Next']);
+      this.log('查找并点击Continue按钮...');
+      const clicked = await this.clickButton(page, ['Continue', '继续', 'Next'], 3); // 增加重试次数
       
       if (!clicked) {
-        throw new Error('无法找到Continue按钮');
+        this.log('未找到Continue按钮，尝试查找submit按钮...');
+        const submitBtn = await page.$('button[type="submit"]');
+        if (submitBtn) {
+          await submitBtn.click();
+          this.log('已点击submit按钮');
+        } else {
+          throw new Error('无法找到Continue或submit按钮');
+        }
       }
       
-      await this.sleep(3000);
+      await this.sleep(2000); // 优化：减少到2秒
       
       // 检查取消标志
       if (this.isCancelled) {
@@ -868,8 +898,8 @@ class RegistrationBot {
       this.log('步骤2: 填写密码信息');
       
       // 等待密码页面加载
-      await page.waitForSelector('input[type="password"]', { timeout: 120000 });
-      await this.sleep(2000);
+      await page.waitForSelector('input[type="password"]', { timeout: 60000 });
+      await this.sleep(1500); // 优化：减少到1.5秒
       
       // 查找所有密码输入框
       const passwordInputs = await page.$$('input[type="password"]');
@@ -881,27 +911,48 @@ class RegistrationBot {
       
       // 填写第一个密码输入框
       this.log('填写密码...');
+      await this.sleep(200);
       await passwordInputs[0].click();
-      await passwordInputs[0].type(password, { delay: 50 });
+      await this.sleep(100);
+      await passwordInputs[0].type(password, { delay: 50 }); // 优化：加快输入速度
+      await this.sleep(200);
+      
+      // 验证密码是否填写成功
+      const pwd1Value = await page.evaluate(el => el.value, passwordInputs[0]);
+      this.log(`密码填写验证: ${pwd1Value.length > 0 ? '成功' : '失败'} (长度: ${pwd1Value.length})`);
       
       // 填写确认密码（如果有）
       if (passwordInputs.length >= 2) {
         this.log('填写确认密码...');
+        await this.sleep(200);
         await passwordInputs[1].click();
+        await this.sleep(100);
         await passwordInputs[1].type(password, { delay: 50 });
+        await this.sleep(200);
+        
+        // 验证确认密码
+        const pwd2Value = await page.evaluate(el => el.value, passwordInputs[1]);
+        this.log(`确认密码验证: ${pwd2Value.length > 0 ? '成功' : '失败'} (长度: ${pwd2Value.length})`);
       }
       
-      await this.sleep(1000);
+      await this.sleep(800); // 优化：减少等待时间
       
       // 点击第二个Continue按钮
-      this.log('点击第二个Continue按钮...');
-      const clicked2 = await this.clickButton(page, ['Continue', '继续', 'Next']);
+      this.log('查找并点击第二个Continue按钮...');
+      const clicked2 = await this.clickButton(page, ['Continue', '继续', 'Next'], 3);
       
       if (!clicked2) {
-        throw new Error('无法找到第二个Continue按钮');
+        this.log('未找到Continue按钮，尝试查找submit按钮...');
+        const submitBtn = await page.$('button[type="submit"]');
+        if (submitBtn) {
+          await submitBtn.click();
+          this.log('已点击submit按钮');
+        } else {
+          throw new Error('无法找到第二个Continue或submit按钮');
+        }
       }
       
-      await this.sleep(3000);
+      await this.sleep(2000); // 优化：减少到2秒
       
       // 检查取消标志
       if (this.isCancelled) {
@@ -910,19 +961,20 @@ class RegistrationBot {
       
       // ========== 第三步: Cloudflare人机验证 ==========
       this.log('步骤3: 等待Cloudflare验证...');
+      this.log('提示: 如果出现人机验证，请在浏览器中完成验证');
       
       // puppeteer-real-browser会自动处理Cloudflare Turnstile验证
-      await this.sleep(10000);
+      await this.sleep(5000); // 优化：减少到5秒
       
       // 点击验证后的Continue按钮
       this.log('查找验证后的Continue按钮...');
-      const clicked3 = await this.clickButton(page, ['Continue', '继续', 'Next'], 3);
+      const clicked3 = await this.clickButton(page, ['Continue', '继续', 'Next'], 5); // 增加重试次数
       
       if (!clicked3) {
-        this.log('未找到Continue按钮,可能已自动跳转');
+        this.log('未找到Continue按钮,可能已自动跳转或需要手动操作');
       }
       
-      await this.sleep(3000);
+      await this.sleep(2000); // 优化：减少到2秒
       
       // ========== 第四步: 输入验证码 ==========
       this.log('步骤4: 等待邮箱验证码...');
@@ -935,9 +987,10 @@ class RegistrationBot {
         throw new Error('注册已取消');
       }
       
-      // 延迟10秒后再获取验证码，避免批量注册时验证码混淆
-      this.log('延迟 10 秒后获取验证码，避免混淆...');
-      await this.sleep(10000);
+      // 延迟3-6秒后再获取验证码（优化：减少等待时间）
+      const randomDelay = 3000 + Math.floor(Math.random() * 3000); // 3-6秒随机延迟
+      this.log(`延迟 ${Math.floor(randomDelay/1000)} 秒后获取验证码...`);
+      await this.sleep(randomDelay);
       
       // 再次检查取消标志
       if (this.isCancelled) {
@@ -949,200 +1002,106 @@ class RegistrationBot {
       const verificationCode = await this.getVerificationCode(email);
       this.log(`获取到验证码: ${verificationCode}`);
       
-      // 输入6位验证码
+      // 输入6位验证码 - 优化的输入逻辑
       const codeInputs = await page.$$('input[type="text"], input[name="code"]');
+      this.log(`找到 ${codeInputs.length} 个验证码输入框`);
       
       if (codeInputs.length === 6) {
         // 如果是6个独立输入框
+        this.log('检测到6个独立验证码输入框，逐个填写...');
         for (let i = 0; i < 6; i++) {
+          await this.sleep(100);
           await codeInputs[i].click();
-          await codeInputs[i].type(verificationCode[i], { delay: 100 });
+          await this.sleep(80);
+          await codeInputs[i].type(verificationCode[i], { delay: 80 });
+          this.log(`已输入第 ${i+1} 位: ${verificationCode[i]}`);
         }
       } else if (codeInputs.length === 1) {
         // 如果是单个输入框
+        this.log('检测到单个验证码输入框，一次性填写...');
+        await this.sleep(300);
         await codeInputs[0].click();
-        await codeInputs[0].type(verificationCode, { delay: 100 });
+        await this.sleep(150);
+        await codeInputs[0].type(verificationCode, { delay: 80 });
+        
+        // 验证输入是否成功
+        const inputValue = await page.evaluate(el => el.value, codeInputs[0]);
+        this.log(`验证码输入验证: ${inputValue === verificationCode ? '成功' : '失败'} (输入值: ${inputValue})`);
+      } else {
+        this.log(`未找到标准的验证码输入框，找到 ${codeInputs.length} 个输入框`);
       }
       
-      await this.sleep(1000);
+      await this.sleep(1000); // 优化：减少等待时间
       
       // 点击Create account按钮
-      console.log('点击Create account按钮...');
+      this.log('查找并点击Create account按钮...');
       const createBtn = await page.$('button[type="submit"]');
       if (createBtn) {
+        await this.sleep(300);
         await createBtn.click();
+        this.log('已点击Create account按钮');
+      } else {
+        this.log('未找到Create account按钮，可能自动提交');
       }
-      await this.sleep(5000);
+      await this.sleep(4000); // 优化：减少到4秒
       
       // ========== 检查注册是否成功 ==========
+      this.log('检查注册状态...');
+      await this.sleep(2000); // 优化：减少到2秒
+      
       const currentUrl = page.url();
+      this.log(`当前URL: ${currentUrl}`);
       const isSuccess = !currentUrl.includes('/login') && !currentUrl.includes('/signup');
       
       if (isSuccess) {
         console.log('注册成功!');
         this.log('注册成功!');
         
-        // ========== 获取 Token（优化版） ==========
-        this.log('步骤6: 获取账号 Token...');
-        
-        let tokenInfo = null;
-        
-        try {
-          // 方法1: 等待网络监听捕获（最多 15 秒）
-          this.log('等待网络监听捕获 Token...');
-          const maxWaitTime = 15000;
-          const startTime = Date.now();
-          
-          while (Date.now() - startTime < maxWaitTime) {
-            if (capturedTokens.accessToken && capturedTokens.refreshToken) {
-              this.log('✅ 网络监听已捕获完整 Token');
-              break;
-            }
-            await this.sleep(500);
-          }
-          
-          // 方法2: 如果网络监听失败，从 localStorage 读取（带重试）
-          if (!capturedTokens.accessToken || !capturedTokens.refreshToken) {
-            this.log('⚠️ 网络监听未完全捕获，尝试从浏览器读取...');
-            
-            const MAX_RETRIES = 3;
-            let tokens = null;
-            
-            for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-              tokens = await page.evaluate(() => {
-                const keys = Object.keys(localStorage);
-                for (const key of keys) {
-                  if (key.includes('firebase:authUser')) {
-                    try {
-                      const data = JSON.parse(localStorage.getItem(key));
-                      if (data && data.stsTokenManager) {
-                        const accessToken = data.stsTokenManager.accessToken;
-                        const refreshToken = data.stsTokenManager.refreshToken;
-                        
-                        // 验证 token 格式（JWT 格式）
-                        if (accessToken && refreshToken && 
-                            accessToken.split('.').length === 3 &&
-                            refreshToken.length > 20) {
-                          return {
-                            accessToken: accessToken,
-                            refreshToken: refreshToken
-                          };
-                        }
-                      }
-                    } catch (e) {
-                      continue;
-                    }
-                  }
-                }
-                return null;
-              });
-              
-              if (tokens) {
-                capturedTokens.accessToken = tokens.accessToken;
-                capturedTokens.refreshToken = tokens.refreshToken;
-                this.log(`✅ 从浏览器读取到 token（第 ${attempt} 次尝试）`);
-                break;
-              }
-              
-              if (attempt < MAX_RETRIES) {
-                this.log(`第 ${attempt} 次读取失败，等待 2 秒后重试...`);
-                await this.sleep(2000);
-              }
-            }
-            
-            if (!tokens) {
-              throw new Error('无法从网络监听或浏览器获取 token');
-            }
-          }
-          
-          // 验证 token 完整性
-          if (!capturedTokens.accessToken || !capturedTokens.refreshToken) {
-            throw new Error('Token 不完整：缺少 accessToken 或 refreshToken');
-          }
-          
-          // 验证 token 格式
-          if (capturedTokens.accessToken.split('.').length !== 3) {
-            throw new Error('accessToken 格式无效（非 JWT 格式）');
-          }
-          
-          // 使用 access_token 获取 API Key（带重试）
-          this.log('正在获取 API Key...');
-          let apiKeyInfo = null;
-          const API_KEY_RETRIES = 2;
-          
-          for (let attempt = 1; attempt <= API_KEY_RETRIES; attempt++) {
-            try {
-              apiKeyInfo = await this.getApiKey(capturedTokens.accessToken);
-              break;
-            } catch (apiError) {
-              if (attempt < API_KEY_RETRIES) {
-                this.log(`获取 API Key 失败（第 ${attempt} 次），重试中...`);
-                await this.sleep(2000);
-              } else {
-                throw apiError;
-              }
-            }
-          }
-          
-          tokenInfo = {
-            name: apiKeyInfo.name,
-            apiKey: apiKeyInfo.apiKey,
-            apiServerUrl: apiKeyInfo.apiServerUrl,
-            refreshToken: capturedTokens.refreshToken,
-            idToken: capturedTokens.idToken  // ✅ 添加 idToken
-          };
-          
-          this.log('✅ Token 获取成功');
-          this.log(`  - API Key: ${apiKeyInfo.apiKey.substring(0, 20)}...`);
-          this.log(`  - 用户名: ${apiKeyInfo.name}`);
-          
-        } catch (tokenError) {
-          this.log(`⚠️ 获取 Token 失败: ${tokenError.message}`);
-          console.error('获取 Token 失败:', tokenError);
-          // 不抛出错误，允许保存不完整的账号信息
-        } finally {
-          // 清理网络监听器
-          if (cdpClient) {
-            try {
-              cdpClient.off('Network.loadingFinished', loadingFinishedHandler);
-              cdpClient.off('Network.responseReceived', responseReceivedHandler);
-              await cdpClient.detach();
-              cdpClient = null;
-            } catch (e) {
-              console.error('关闭 CDP 会话失败:', e);
-            }
-          }
-        }
-        
-        // 保存账号到本地（通过IPC调用主进程，确保线程安全）
-        const { ipcRenderer } = require('electron');
-        
+        // 保存账号到本地（只保存邮箱和密码，Token 后续通过登录获取）
         const account = {
           email,
           password,
           firstName,
           lastName,
-          name: tokenInfo ? tokenInfo.name : `${firstName} ${lastName}`,
-          apiKey: tokenInfo ? tokenInfo.apiKey : null,
-          apiServerUrl: tokenInfo ? tokenInfo.apiServerUrl : null,
-          refreshToken: tokenInfo ? tokenInfo.refreshToken : null,
-          idToken: tokenInfo ? tokenInfo.idToken : null,
-          idTokenExpiresAt: tokenInfo ? (Date.now() + 3600 * 1000) : null
+          name: `${firstName} ${lastName}`
         };
         
-        // 使用IPC调用主进程的add-account，自动使用文件锁
+        // 使用回调函数保存账号，自动使用文件锁
+        let saveSuccess = false;
+        let saveError = null;
+        
         try {
-          const addResult = await ipcRenderer.invoke('add-account', account);
-          if (addResult.success) {
-            console.log('账号已保存到本地');
-            this.log('账号已保存到本地');
+          if (this.saveAccountCallback) {
+            const addResult = await this.saveAccountCallback(account);
+            if (addResult.success) {
+              console.log('账号已保存到本地');
+              this.log('账号已保存到本地');
+              saveSuccess = true;
+            } else {
+              console.warn('保存账号失败:', addResult.error);
+              this.log(`保存账号失败: ${addResult.error}`);
+              saveError = addResult.error;
+            }
           } else {
-            console.warn('保存账号失败:', addResult.error);
-            this.log(`保存账号失败: ${addResult.error}`);
+            console.warn('未提供保存账号回调函数');
+            this.log('未提供保存账号回调函数');
+            saveError = '未提供保存账号回调函数';
           }
         } catch (error) {
           console.error('保存账号异常:', error);
           this.log(`保存账号异常: ${error.message}`);
+          saveError = error.message;
+        }
+        
+        // 如果保存失败，返回失败状态
+        if (!saveSuccess) {
+          return {
+            success: false,
+            error: `注册成功但保存失败: ${saveError}`,
+            email,
+            password,
+            partialSuccess: true  // 标记为部分成功（注册成功但保存失败）
+          };
         }
         
         return {
@@ -1151,9 +1110,7 @@ class RegistrationBot {
           password,
           firstName,
           lastName,
-          name: account.name,
-          apiKey: account.apiKey,
-          createdAt: account.createdAt
+          name: account.name
         };
       } else {
         throw new Error('注册失败，请检查页面');
@@ -1178,28 +1135,41 @@ class RegistrationBot {
         errorStack: error.stack
       };
     } finally {
-      // 清理 CDP 会话
-      if (cdpClient) {
-        try {
-          await cdpClient.detach();
-        } catch (e) {
-          // 忽略错误
-        }
-      }
-      
-      // 关闭浏览器
+      // 关闭浏览器 - 优化的关闭逻辑
       if (browser) {
         try {
           // 检查浏览器是否还在运行
           const isConnected = browser.isConnected();
           if (isConnected) {
+            // 给用户一些时间查看最终状态（仅在非取消情况下）
+            if (!this.isCancelled) {
+              this.log('注册流程完成，1秒后关闭浏览器...');
+              await this.sleep(1000);
+            }
+            
             await browser.close();
             console.log('浏览器已关闭');
+            this.log('浏览器已关闭');
           } else {
             console.log('浏览器已被外部关闭');
+            this.log('浏览器已被外部关闭');
           }
         } catch (e) {
           console.error('关闭浏览器失败:', e.message);
+          this.log(`关闭浏览器时出错: ${e.message}`);
+        }
+        
+        // 清理临时用户数据目录
+        if (userDataDir) {
+          try {
+            const fs = require('fs');
+            if (fs.existsSync(userDataDir)) {
+              fs.rmSync(userDataDir, { recursive: true, force: true });
+              console.log('临时目录已清理:', userDataDir);
+            }
+          } catch (cleanupError) {
+            console.warn('清理临时目录失败:', cleanupError.message);
+          }
         }
       }
     }
@@ -1213,24 +1183,34 @@ class RegistrationBot {
     // 重置取消标志
     this.isCancelled = false;
     
-    // 直接使用用户设置的并发数，不超过总注册数
-    const MAX_CONCURRENT = Math.min(maxConcurrent || 4, count);
+    // 尊重用户设置的并发数，不做硬性限制
+    const userConcurrent = maxConcurrent || 4;
+    const MAX_CONCURRENT = Math.min(userConcurrent, count); // 不超过总数量即可
     
-    // 平台特定的延迟参数
+    // 如果用户设置超过建议值，给出警告
+    if (userConcurrent > 3 && logCallback) {
+      logCallback(`提示: 并发数 ${userConcurrent} 超过建议值(3)，建议降低以提高成功率`);
+    }
+    
+    // 平台特定的延迟参数（优化：减少等待时间）
     const platform = os.platform();
     const isWindows = platform === 'win32';
-    const windowStartDelay = isWindows ? 5000 : 3000; // Windows需要更长的窗口启动延迟
-    const batchInterval = isWindows ? 15000 : 10000; // Windows需要更长的批次间隔
+    const windowStartDelay = isWindows ? 3000 : 2000; // 窗口启动间隔：Windows 3秒，macOS 2秒
+    const batchInterval = isWindows ? 5000 : 3000; // 批次间隔：Windows 5秒，macOS 3秒
     
     if (logCallback) {
       logCallback(`开始批量注册 ${count} 个账号`);
-      logCallback(`最大并发数: ${MAX_CONCURRENT} 个窗口`);
-      logCallback(`验证码延迟: 10 秒`);
+      logCallback(`最大并发数: ${MAX_CONCURRENT} 个窗口（已优化）`);
+      logCallback(`窗口启动间隔: ${windowStartDelay/1000} 秒`);
+      logCallback(`验证码延迟: 3-6 秒随机`);
+      logCallback(`批次间隔: ${batchInterval/1000} 秒`);
       logCallback(`平台: ${platform === 'win32' ? 'Windows' : platform === 'darwin' ? 'macOS' : 'Linux'}`);
     }
     
     const results = [];
     let completed = 0;
+    let successCount = 0;
+    let failedCount = 0;
     
     // 分批执行，每批最多 MAX_CONCURRENT 个
     for (let i = 0; i < count; i += MAX_CONCURRENT) {
@@ -1259,8 +1239,8 @@ class RegistrationBot {
           }
         };
         
-        // 每个窗口间隔启动，避免验证码混淆
-        const startDelay = j * 3000; // 每个窗口延迟3秒启动
+        // 每个窗口间隔启动，避免验证码混淆（优化后）
+        const startDelay = j * windowStartDelay; // 使用平台特定的启动延迟
         
         const task = (async () => {
           await this.sleep(startDelay);
@@ -1278,11 +1258,46 @@ class RegistrationBot {
             logCallback(`\n[窗口${taskIndex}] 开始注册...`);
           }
           
-          const result = await this.registerAccount(taskLogCallback);
+          // 添加失败重试机制（最多重试1次）
+          let result = await this.registerAccount(taskLogCallback);
+          
+          if (!result.success && !result.cancelled && !result.partialSuccess) {
+            if (logCallback) {
+              logCallback(`[窗口${taskIndex}] 首次失败，等待10秒后重试...`);
+            }
+            await this.sleep(10000);
+            
+            if (!this.isCancelled) {
+              if (logCallback) {
+                logCallback(`[窗口${taskIndex}] 开始重试...`);
+              }
+              result = await this.registerAccount(taskLogCallback);
+              
+              if (result.success) {
+                if (logCallback) {
+                  logCallback(`[窗口${taskIndex}] 重试成功！`);
+                }
+              }
+            }
+          }
           
           completed++;
+          
+          // 更新成功/失败计数
+          if (result.success) {
+            successCount++;
+          } else if (!result.cancelled) {
+            failedCount++;
+          }
+          
+          // 发送实时进度更新
           if (progressCallback) {
-            progressCallback({ current: completed, total: count });
+            progressCallback({ 
+              current: completed, 
+              total: count,
+              success: successCount,
+              failed: failedCount
+            });
           }
           
           if (logCallback) {
@@ -1313,14 +1328,14 @@ class RegistrationBot {
         break;
       }
       
-      // 如果还有下一批，等待一段时间再开始
+      // 如果还有下一批，等待一段时间再开始（优化后）
       if (i + MAX_CONCURRENT < count) {
         if (logCallback) {
-          logCallback(`\n等待5秒后开始下一批次...`);
+          logCallback(`\n等待 ${batchInterval/1000} 秒后开始下一批次...`);
         }
         
         // 分段等待，以便快速响应取消操作
-        for (let wait = 0; wait < 5000; wait += 500) {
+        for (let wait = 0; wait < batchInterval; wait += 500) {
           if (this.isCancelled) break;
           await this.sleep(500);
         }
@@ -1356,145 +1371,9 @@ class RegistrationBot {
     await BrowserKiller.cancelBatchRegistration(this, logCallback);
   }
 
-  /**
-   * 从浏览器提取 Firebase refresh_token
-   */
-  async extractRefreshToken(page) {
-    try {
-      this.log('正在从浏览器提取 refresh_token...');
-      
-      const refreshToken = await page.evaluate(() => {
-        // Firebase 存储格式: firebase:authUser:{API_KEY}:{APP_NAME}
-        const keys = Object.keys(localStorage);
-        
-        // 方法1: 查找包含 firebase:authUser 的 key
-        for (const key of keys) {
-          if (key.includes('firebase:authUser')) {
-            try {
-              const data = JSON.parse(localStorage.getItem(key));
-              // 路径: data.stsTokenManager.refreshToken
-              if (data && data.stsTokenManager && data.stsTokenManager.refreshToken) {
-                return data.stsTokenManager.refreshToken;
-              }
-            } catch (e) {
-              continue;
-            }
-          }
-        }
-        
-        // 方法2: 直接构造 key
-        const authKey = 'firebase:authUser:AIzaSyDsOl-1XpT5err0Tcnx8FFod1H8gVGIycY:[DEFAULT]';
-        if (localStorage.getItem(authKey)) {
-          try {
-            const data = JSON.parse(localStorage.getItem(authKey));
-            if (data && data.stsTokenManager && data.stsTokenManager.refreshToken) {
-              return data.stsTokenManager.refreshToken;
-            }
-          } catch (e) {
-            // 继续尝试其他方法
-          }
-        }
-        
-        return null;
-      });
-      
-      if (refreshToken) {
-        this.log('✅ 成功提取 refresh_token');
-        return refreshToken;
-      } else {
-        throw new Error('未找到 refresh_token');
-      }
-    } catch (error) {
-      this.log(`提取 refresh_token 失败: ${error.message}`);
-      throw error;
-    }
-  }
 
   /**
-   * 使用 refresh_token 获取 access_token
-   */
-  async getAccessToken(refreshToken) {
-    const axios = require('axios');
-    const FIREBASE_API_KEY = 'AIzaSyDsOl-1XpT5err0Tcnx8FFod1H8gVGIycY';
-    
-    try {
-      this.log('正在获取 access_token...');
-      
-      const formData = new URLSearchParams();
-      formData.append('grant_type', 'refresh_token');
-      formData.append('refresh_token', refreshToken);
-      
-      // 使用 Cloudflare Workers 中转（国内可访问）
-      const WORKER_URL = 'https://jolly-leaf-328a.92xh6jhdym.workers.dev';
-      
-      this.log('使用 Cloudflare Workers 中转请求...');
-      
-      const response = await axios.post(
-        WORKER_URL,
-        {
-          grant_type: 'refresh_token',
-          refresh_token: refreshToken,
-          api_key: FIREBASE_API_KEY
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
-          }
-        }
-      );
-      
-      this.log('✅ 成功获取 access_token');
-      
-      return {
-        accessToken: response.data.id_token,
-        refreshToken: response.data.refresh_token,
-        expiresIn: parseInt(response.data.expires_in)
-      };
-    } catch (error) {
-      this.log(`获取 access_token 失败: ${error.response?.data?.error?.message || error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * 使用 access_token 获取 API Key
-   */
-  async getApiKey(accessToken) {
-    const axios = require('axios');
-    
-    try {
-      this.log('正在获取 API Key...');
-      
-      const response = await axios.post(
-        'https://register.windsurf.com/exa.seat_management_pb.SeatManagementService/RegisterUser',
-        {
-          firebase_id_token: accessToken
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
-            'x-client-version': 'Chrome/JsCore/11.0.0/FirebaseCore-web'
-          }
-        }
-      );
-      
-      this.log('✅ 成功获取 API Key');
-      
-      return {
-        apiKey: response.data.api_key,
-        name: response.data.name,
-        apiServerUrl: response.data.api_server_url
-      };
-    } catch (error) {
-      this.log(`获取 API Key 失败: ${error.response?.data?.message || error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * 点击按钮的辅助方法
+   * 点击按钮的辅助方法（优化版）
    * @param {Page} page - Puppeteer页面对象
    * @param {Array} textList - 按钮文本列表
    * @param {Number} retries - 重试次数
@@ -1502,39 +1381,82 @@ class RegistrationBot {
   async clickButton(page, textList = ['Continue'], retries = 1) {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
+        // 等待页面稳定
+        await this.sleep(500);
+        
         // 方式1: 通过 type=submit
         const submitBtn = await page.$('button[type="submit"]');
         if (submitBtn) {
-          await submitBtn.click();
-          this.log('按钮点击成功 (submit)');
-          return true;
+          const isVisible = await page.evaluate(el => {
+            const rect = el.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0;
+          }, submitBtn);
+          
+          if (isVisible) {
+            await this.sleep(200);
+            await submitBtn.click();
+            await this.sleep(200);
+            this.log('按钮点击成功 (submit)');
+            return true;
+          }
         }
       } catch (e) {
-        // 继续尝试其他方式
+        this.log(`方式1失败: ${e.message}`);
       }
       
       try {
         // 方式2: 通过文本内容查找
         const buttons = await page.$$('button');
-        for (const btn of buttons) {
-          const text = await page.evaluate(el => el.textContent, btn);
-          if (text) {
+        this.log(`找到 ${buttons.length} 个按钮元素`);
+        
+        for (let i = 0; i < buttons.length; i++) {
+          const btn = buttons[i];
+          const text = await page.evaluate(el => el.textContent?.trim() || '', btn);
+          const isVisible = await page.evaluate(el => {
+            const rect = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+          }, btn);
+          
+          if (text && isVisible) {
+            this.log(`按钮 ${i+1}: "${text}" (可见: ${isVisible})`);
+            
             for (const searchText of textList) {
               if (text.includes(searchText)) {
+                await this.sleep(200);
                 await btn.click();
-                this.log(`按钮点击成功 (${searchText})`);
+                await this.sleep(200);
+                this.log(`按钮点击成功: "${searchText}"`);
                 return true;
               }
             }
           }
         }
       } catch (e) {
-        // 继续重试
+        this.log(`方式2失败: ${e.message}`);
+      }
+      
+      // 方式3: 尝试通过aria-label查找
+      try {
+        for (const searchText of textList) {
+          const ariaBtn = await page.$(`button[aria-label*="${searchText}"]`);
+          if (ariaBtn) {
+            await this.sleep(500);
+            await ariaBtn.click();
+            await this.sleep(500);
+            this.log(`按钮点击成功 (aria-label: ${searchText})`);
+            return true;
+          }
+        }
+      } catch (e) {
+        this.log(`方式3失败: ${e.message}`);
       }
       
       if (attempt < retries - 1) {
-        this.log(`第${attempt + 1}次未找到按钮,等待后重试...`);
+        this.log(`第${attempt + 1}次未找到按钮，等待2秒后重试...`);
         await this.sleep(2000);
+      } else {
+        this.log(`尝试了${retries}次仍未找到可点击的按钮`);
       }
     }
     

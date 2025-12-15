@@ -1,11 +1,26 @@
 // accountQuery.js - 账号查询模块（订阅类型和积分）
 // 独立模块，不依赖注册流程
 
-const axios = require('axios');
+// 获取依赖（兼容浏览器和 Node.js 环境）
+function getAxios() {
+  if (typeof window !== 'undefined' && window.axios) {
+    return window.axios;
+  }
+  return require('axios');
+}
+
+function getConstants() {
+  if (typeof window !== 'undefined' && window.CONSTANTS) {
+    return window.CONSTANTS;
+  }
+  return require('./constants');
+}
 
 // 常量配置
 const CONFIG = {
-  REQUEST_TIMEOUT: 30000,        // 请求超时30秒
+  get REQUEST_TIMEOUT() {
+    return getConstants().REQUEST_TIMEOUT;
+  },
   QUERY_DELAY: 500,              // 查询延迟500ms
   AUTO_QUERY_INTERVAL: 5 * 60 * 1000,  // 默认5分钟
   MIN_INTERVAL: 5,               // 最小间隔5分钟
@@ -18,24 +33,38 @@ const CONFIG = {
 const AccountQuery = {
   /**
    * 使用 refresh_token 获取 access_token
+   * @param {string} refreshToken - 刷新令牌
+   * @param {string} email - 可选
+   * @param {string} password - 可选
    */
-  async getAccessToken(refreshToken) {
-    const FIREBASE_API_KEY = 'AIzaSyDsOl-1XpT5err0Tcnx8FFod1H8gVGIycY';
-    const WORKER_URL = 'https://jolly-leaf-328a.92xh6jhdym.workers.dev';
+  async getAccessToken(refreshToken, email = null, password = null) {
+    const axios = getAxios();
+    const CONSTANTS = getConstants();
+    const FIREBASE_API_KEY = CONSTANTS.FIREBASE_API_KEY;
+    const WORKER_URL = CONSTANTS.WORKER_URL;
     
     try {
+      // 构建请求体
+      const requestBody = {
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        api_key: FIREBASE_API_KEY
+      };
+      
+      if (email && password) {
+        requestBody.email = email;
+        requestBody.password = password;
+      }
+      
       // 使用 Cloudflare Workers 中转（国内可访问）
       const response = await axios.post(
         WORKER_URL,
-        {
-          grant_type: 'refresh_token',
-          refresh_token: refreshToken,
-          api_key: FIREBASE_API_KEY
-        },
+        requestBody,
         {
           headers: {
             'Content-Type': 'application/json',
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            // 'X-Secret-Key': CONSTANTS.WORKER_SECRET_KEY  // 已禁用密钥验证
           },
           timeout: CONFIG.REQUEST_TIMEOUT
         }
@@ -47,6 +76,9 @@ const AccountQuery = {
         expiresIn: parseInt(response.data.expires_in)
       };
     } catch (error) {
+      if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+        throw new Error('无法连接到中转服务器，请检查网络连接或开启代理');
+      }
       throw new Error(`获取 access_token 失败: ${error.response?.data?.error?.message || error.message}`);
     }
   },
@@ -56,6 +88,7 @@ const AccountQuery = {
    * 使用简化方式：直接用 JSON 格式请求
    */
   async getUsageInfo(accessToken) {
+    const axios = getAxios();
     try {
       const response = await axios.post(
         'https://web-backend.windsurf.com/exa.seat_management_pb.SeatManagementService/GetPlanStatus',
@@ -84,9 +117,14 @@ const AccountQuery = {
       const flexCredits = Math.round((planStatus.availableFlexCredits || 0) / 100);
       const totalCredits = promptCredits + flexCredits;
       
+      // 计算已使用积分 = 已使用Prompt积分 + 已使用Flex积分
+      const usedPromptCredits = Math.round((planStatus.usedPromptCredits || 0) / 100);
+      const usedFlexCredits = Math.round((planStatus.usedFlexCredits || 0) / 100);
+      const usedCredits = usedPromptCredits + usedFlexCredits;
+      
       return {
         planName: planStatus.planInfo?.planName || 'Free',
-        usedCredits: Math.round((planStatus.usedPromptCredits || 0) / 100),
+        usedCredits: usedCredits,
         totalCredits: totalCredits,
         usagePercentage: 0,
         expiresAt: expiresAt,
@@ -128,7 +166,7 @@ const AccountQuery = {
         // Token 不存在或已过期,需要刷新
         try {
           console.log(`[Token刷新] 账号 ${account.email} 的Token已过期，正在刷新...`);
-          const tokenData = await this.getAccessToken(account.refreshToken);
+          const tokenData = await this.getAccessToken(account.refreshToken, account.email, account.password);
           
           if (!tokenData || !tokenData.accessToken) {
             throw new Error('刷新Token失败：返回的Token为空');
@@ -343,10 +381,10 @@ const AccountQuery = {
         });
         
         if (!result.success) {
-          console.error(`[账号查询] ❌ ${account.email} - ${result.error}`);
+          console.error(`[账号查询] ${account.email} - ${result.error}`);
         }
       } catch (error) {
-        console.error(`[账号查询] ❌ ${account.email} - ${error.message}`);
+        console.error(`[账号查询] ${account.email} - ${error.message}`);
         results.push({
           email: account.email,
           success: false,
@@ -444,7 +482,7 @@ if (typeof window !== 'undefined') {
               updateCount++;
             }
           } catch (error) {
-            console.error(`[自动查询] ❌ 更新 ${result.email} 失败:`, error);
+            console.error(`[自动查询] 更新 ${result.email} 失败:`, error);
           }
         }
       }
@@ -530,10 +568,10 @@ function updateAccountUI(email, usageInfo) {
       }
     }
     
-    console.log(`[UI更新] ✅ 已更新 ${email} 的显示`);
+    console.log(`[UI更新] 已更新 ${email} 的显示`);
     return true;
   } catch (error) {
-    console.error(`[UI更新] ❌ 更新 ${email} 失败:`, error);
+    console.error(`[UI更新] 更新 ${email} 失败:`, error);
     return false;
   }
 }
@@ -616,4 +654,8 @@ function updateAccountUI(email, usageInfo) {
     stopAutoQuery();
     console.log('[自动查询] 页面卸载，已清理定时器');
   });
+  
+  // 立即验证模块是否正确导出
+  console.log('[AccountQuery] 模块已加载到 window.AccountQuery');
+  console.log('[AccountQuery] 可用方法:', Object.keys(AccountQuery));
 }

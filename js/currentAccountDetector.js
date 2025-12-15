@@ -136,118 +136,20 @@ if (typeof window !== 'undefined') {
 
 /**
  * 更新账号列表，标记当前使用的账号
+ * 注意：此功能已禁用，仅保留头部账号检测
  */
 async function updateAccountListWithCurrent() {
-  try {
-    console.log('[账号列表] 开始更新当前账号标记...');
-    
-    // 获取当前登录的账号
-    const currentAccount = await window.ipcRenderer.invoke('get-current-windsurf-account');
-    
-    if (!currentAccount) {
-      console.log('[账号列表] 未检测到当前登录账号');
-      return;
-    }
-    
-    console.log('[账号列表] 当前登录:', currentAccount.email);
-    
-    // 查找所有账号行（使用新的选择器）
-    const accountItems = document.querySelectorAll('.account-item:not(.header)');
-    
-    if (accountItems.length === 0) {
-      console.warn('[账号列表] 未找到任何账号行');
-      return;
-    }
-    
-    accountItems.forEach(item => {
-      // 使用data-email属性获取邮箱
-      const email = item.getAttribute('data-email');
-      const emailElement = item.querySelector('.acc-col-email');
-      const indexElement = item.querySelector('.acc-col-index');
-      
-      if (!email || !emailElement) return;
-      
-      // 检查是否是当前账号（邮箱匹配，不区分大小写）
-      if (email.toLowerCase() === currentAccount.email.toLowerCase()) {
-        // 添加高亮样式（不使用左边框,避免偏移）
-        item.classList.add('current-account');
-        item.style.background = 'linear-gradient(90deg, #f0f9ff 0%, #ffffff 100%)';
-        
-        // 在序号列添加"当前"标记（覆盖在序号上方）
-        if (indexElement && !indexElement.querySelector('.current-badge')) {
-          indexElement.style.position = 'relative';
-          
-          const badge = document.createElement('div');
-          badge.className = 'current-badge';
-          badge.textContent = '当前';
-          badge.style.cssText = `
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2px 6px;
-            background: #007aff;
-            color: white;
-            border-radius: 3px;
-            font-size: 10px;
-            font-weight: 600;
-            white-space: nowrap;
-            z-index: 10;
-          `;
-          indexElement.appendChild(badge);
-        }
-        
-        console.log('[账号列表] ✅ 已标记当前账号:', email);
-      } else {
-        // 移除高亮样式
-        item.classList.remove('current-account');
-        item.style.background = '';
-        
-        // 移除"当前"标记
-        if (indexElement) {
-          const badge = indexElement.querySelector('.current-badge');
-          if (badge) {
-            badge.remove();
-            indexElement.style.position = '';
-          }
-        }
-      }
-    });
-    
-    console.log('[账号列表] ✅ 当前账号标记更新完成');
-    
-  } catch (error) {
-    console.error('[账号列表] 更新失败:', error);
-  }
+  // 功能已禁用 - 不再在列表中标记当前账号
+  return;
 }
 
 /**
  * 定时检测当前账号（可选）
+ * 注意：此功能已禁用
  */
 function startCurrentAccountMonitor(interval = 10000) {
-  // 立即执行一次
-  updateAccountListWithCurrent();
-  
-  // 定时检测
-  setInterval(() => {
-    updateAccountListWithCurrent();
-  }, interval);
-  
-  console.log(`[账号监控] 已启动，间隔: ${interval / 1000} 秒`);
-}
-
-// 页面加载时自动检测
-if (typeof window !== 'undefined') {
-  window.addEventListener('DOMContentLoaded', () => {
-    // 延迟 1 秒执行，确保账号列表已加载
-    setTimeout(() => {
-      updateAccountListWithCurrent();
-    }, 1000);
-  });
+  // 功能已禁用
+  return;
 }
 
 })(); // 闭合 IIFE

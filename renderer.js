@@ -94,7 +94,7 @@ async function refreshAllData() {
     if (typeof showToast === 'function') {
       showToast('刷新失败: ' + error.message, 'error');
     } else {
-      alert('刷新失败: ' + error.message);
+      showCustomAlert('刷新失败: ' + error.message, 'error');
     }
   }
 }
@@ -109,337 +109,14 @@ let versionUpdateInfo = null;
 let lastVersionCheckTime = 0;
 let versionCheckCooldown = 30 * 1000; // 30秒冷却时间
 let isForceUpdateActive = false; // 是否有强制更新弹窗激活
+let isQuitting = false; // 是否正在退出应用（用于区分退出和刷新）
 
 // 维护模式相关变量
 let isMaintenanceModeActive = false; // 是否处于维护模式
 
-// 赞助弹窗相关变量
-let sponsorPopupTimer = null;
-let lastSponsorPopupTime = 0;
-const SPONSOR_POPUP_INTERVAL = 10 * 60 * 1000; // 10分钟
-
 /**
- * 显示赞助弹窗
+ * 原赞助弹窗已移除
  */
-function showSponsorPopup() {
-  // 检查是否已经有弹窗
-  if (document.getElementById('sponsorPopupOverlay')) {
-    return;
-  }
-  
-  const now = Date.now();
-  // 如果距离上次弹窗不足10分钟，不弹出
-  if (now - lastSponsorPopupTime < SPONSOR_POPUP_INTERVAL) {
-    return;
-  }
-  
-  lastSponsorPopupTime = now;
-  
-  const popupHTML = `
-    <div id="sponsorPopupOverlay" style="
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(12px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 999999;
-      animation: fadeIn 0.3s ease;
-    ">
-      <div style="
-        background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
-        border-radius: 24px;
-        padding: 0;
-        max-width: 520px;
-        width: 90%;
-        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
-        animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        position: relative;
-        overflow: hidden;
-      " onclick="event.stopPropagation()">
-        <!-- 顶部装饰条 -->
-        <div style="
-          height: 6px;
-          background: linear-gradient(90deg, #ff9500, #ff3b30, #ff9500);
-          background-size: 200% 100%;
-          animation: gradientMove 3s ease infinite;
-        "></div>
-        
-        <!-- 关闭按钮 -->
-        <button onclick="closeSponsorPopup()" style="
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          background: rgba(0, 0, 0, 0.06);
-          border: none;
-          border-radius: 50%;
-          width: 36px;
-          height: 36px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.3s;
-          z-index: 10;
-        " onmouseover="this.style.background='rgba(0, 0, 0, 0.12)'; this.style.transform='rotate(90deg)'" onmouseout="this.style.background='rgba(0, 0, 0, 0.06)'; this.style.transform='rotate(0)'">
-          <i data-lucide="x" style="width: 20px; height: 20px; color: #1d1d1f;"></i>
-        </button>
-        
-        <!-- 内容区域 -->
-        <div style="padding: 36px 32px 32px;">
-          <!-- 图标和标题 -->
-          <div style="text-align: center; margin-bottom: 20px;">
-            <!-- 跪求表情包图片 -->
-            <div style="
-              margin-bottom: 20px;
-              animation: bounce 1.5s ease-in-out infinite;
-              display: inline-block;
-              position: relative;
-            ">
-              <img src="pay/IMG_4702.jpeg" alt="跪求赞助" style="
-                width: 100px;
-                height: 100px;
-                border-radius: 20px;
-                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-                object-fit: cover;
-                border: 3px solid #fff;
-              ">
-              <!-- 哭泣表情 -->
-              <div style="
-                position: absolute;
-                top: -10px;
-                right: -10px;
-                font-size: 32px;
-                animation: shake 0.5s ease-in-out infinite;
-              ">😭</div>
-            </div>
-            <h3 style="
-              margin: 0 0 12px 0;
-              font-size: 28px;
-              font-weight: 800;
-              background: linear-gradient(135deg, #ff9500, #ff3b30);
-              -webkit-background-clip: text;
-              -webkit-text-fill-color: transparent;
-              background-clip: text;
-              letter-spacing: -0.5px;
-              line-height: 1.2;
-            ">开发者快没钱吃饭了...</h3>
-            <p style="
-              margin: 0 0 8px 0;
-              font-size: 14px;
-              color: #6e6e73;
-              font-weight: 500;
-              line-height: 1.6;
-            ">服务器账单💸、CDN费用💰、域名续费📅<br>每天都在烧钱，真的顶不住了 😢</p>
-            <p style="
-              margin: 0;
-              font-size: 12px;
-              color: #86868b;
-              font-style: italic;
-            ">求求了，给口饭吃吧 🍚</p>
-          </div>
-          
-          <!-- 悲情卡片 -->
-          <div style="
-            background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 2px dashed #ffcccc;
-          ">
-            <div style="text-align: center; margin-bottom: 16px;">
-              <div style="font-size: 16px; font-weight: 700; color: #ff3b30; margin-bottom: 12px;">
-                💔 真实的困境
-              </div>
-            </div>
-            <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
-              <div style="font-size: 20px; flex-shrink: 0;">😰</div>
-              <div>
-                <div style="font-size: 13px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
-                  服务器每月 ¥500+
-                </div>
-                <div style="font-size: 11px; color: #6e6e73; line-height: 1.5;">
-                  API 中转、数据存储、版本管理...
-                </div>
-              </div>
-            </div>
-            <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
-              <div style="font-size: 20px; flex-shrink: 0;">😭</div>
-              <div>
-                <div style="font-size: 13px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
-                  CDN 流量费 ¥300+
-                </div>
-                <div style="font-size: 11px; color: #6e6e73; line-height: 1.5;">
-                  让你们用得更快更流畅...
-                </div>
-              </div>
-            </div>
-            <div style="display: flex; align-items: flex-start; gap: 12px;">
-              <div style="font-size: 20px; flex-shrink: 0;">🥺</div>
-              <div>
-                <div style="font-size: 13px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px;">
-                  开发时间无价
-                </div>
-                <div style="font-size: 11px; color: #6e6e73; line-height: 1.5;">
-                  熬夜写代码、修 Bug、回复用户...
-                </div>
-              </div>
-            </div>
-            <div style="
-              margin-top: 16px;
-              padding: 12px;
-              background: rgba(255, 59, 48, 0.1);
-              border-radius: 8px;
-              text-align: center;
-            ">
-              <div style="font-size: 12px; color: #ff3b30; font-weight: 600;">
-                真的撑不住了，求求给点支持吧 🙏
-              </div>
-            </div>
-          </div>
-          
-          <!-- 按钮组 -->
-          <div style="display: flex; gap: 12px;">
-            <button onclick="closeSponsorPopup()" style="
-              flex: 1;
-              padding: 14px 24px;
-              background: #f5f5f7;
-              border: 1px solid #e5e5ea;
-              border-radius: 12px;
-              color: #1d1d1f;
-              font-size: 15px;
-              font-weight: 600;
-              cursor: pointer;
-              transition: all 0.2s;
-            " onmouseover="this.style.background='#e5e5ea'" onmouseout="this.style.background='#f5f5f7'">
-              稍后再说
-            </button>
-            <button onclick="openSponsorPage()" style="
-              flex: 1.2;
-              padding: 14px 24px;
-              background: linear-gradient(135deg, #ff9500, #ff3b30);
-              border: none;
-              border-radius: 12px;
-              color: white;
-              font-size: 15px;
-              font-weight: 700;
-              cursor: pointer;
-              box-shadow: 0 6px 20px rgba(255, 59, 48, 0.35);
-              transition: all 0.3s;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              gap: 8px;
-            " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 10px 28px rgba(255, 59, 48, 0.45)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(255, 59, 48, 0.35)'">
-              <i data-lucide="heart" style="width: 18px; height: 18px;"></i>
-              <span>给口饭吃 🍚</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <style>
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      @keyframes slideUp {
-        from { 
-          opacity: 0;
-          transform: translateY(40px) scale(0.95);
-        }
-        to { 
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-      }
-      @keyframes bounce {
-        0%, 100% { 
-          transform: translateY(0) scale(1);
-        }
-        25% { 
-          transform: translateY(-15px) scale(1.05);
-        }
-        50% { 
-          transform: translateY(0) scale(1);
-        }
-        75% { 
-          transform: translateY(-8px) scale(1.02);
-        }
-      }
-      @keyframes shake {
-        0%, 100% { transform: rotate(0deg); }
-        25% { transform: rotate(-15deg); }
-        75% { transform: rotate(15deg); }
-      }
-      @keyframes gradientMove {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-      }
-    </style>
-  `;
-  
-  document.body.insertAdjacentHTML('beforeend', popupHTML);
-  
-  // 初始化图标
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
-  }
-}
-
-/**
- * 关闭赞助弹窗
- */
-function closeSponsorPopup() {
-  const overlay = document.getElementById('sponsorPopupOverlay');
-  if (overlay) {
-    overlay.style.animation = 'fadeOut 0.2s ease';
-    setTimeout(() => {
-      overlay.remove();
-    }, 200);
-  }
-}
-
-/**
- * 打开赞助页面
- */
-function openSponsorPage() {
-  closeSponsorPopup();
-  if (typeof switchView === 'function') {
-    switchView('sponsor');
-  }
-}
-
-/**
- * 启动赞助弹窗定时器
- */
-function startSponsorPopupTimer() {
-  // 首次启动时延迟显示
-  setTimeout(() => {
-    showSponsorPopup();
-  }, 5 * 60 * 1000); // 5分钟后首次弹出
-  
-  // 之后每10分钟弹一次
-  sponsorPopupTimer = setInterval(() => {
-    showSponsorPopup();
-  }, SPONSOR_POPUP_INTERVAL);
-}
-
-/**
- * 停止赞助弹窗定时器
- */
-function stopSponsorPopupTimer() {
-  if (sponsorPopupTimer) {
-    clearInterval(sponsorPopupTimer);
-    sponsorPopupTimer = null;
-  }
-}
 
 // 添加 fadeOut 动画
 const style = document.createElement('style');
@@ -454,12 +131,17 @@ document.head.appendChild(style);
 // 全局错误捕获
 window.addEventListener('error', (event) => {
   console.error('全局错误:', event.error);
-  alert(t('errorOccurred') + ': ' + event.error.message);
+  showCustomAlert('发生错误: ' + event.error.message, 'error');
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   console.error('未处理的Promise拒绝:', event.reason);
-  alert(t('asyncOperationFailed') + ': ' + event.reason);
+  showCustomAlert('异步操作失败: ' + event.reason, 'error');
+});
+
+// 监听菜单栏的检查更新命令
+window.ipcRenderer.on('check-for-updates', () => {
+  checkForUpdates();
 });
 
 // 监听版本更新通知
@@ -533,12 +215,26 @@ function deactivateMaintenanceMode() {
   document.body.style.pointerEvents = 'auto';
   enableAllFunctions();
   
-  alert('✅ 服务器维护已结束，应用已恢复正常！');
+  showCustomAlert('服务器维护已结束，应用已恢复正常！', 'success');
 }
 
 // 退出应用程序
 function quitApplication() {
   console.log('🚪 用户请求退出应用...');
+  
+  // 设置退出标志，防止 beforeunload 弹出提示
+  isQuitting = true;
+  
+  // 退出前先移除所有防护机制，避免 beforeunload 阻止退出
+  if (isForceUpdateActive) {
+    removeForceUpdateProtection();
+  }
+  if (isMaintenanceModeActive) {
+    // 移除维护模式防护
+    document.removeEventListener('keydown', preventMaintenanceKeyEvents, true);
+    document.removeEventListener('contextmenu', preventMaintenanceEvents, true);
+  }
+  
   if (window.ipcRenderer) {
     window.ipcRenderer.send('quit-app');
   } else {
@@ -576,7 +272,7 @@ function showApiUnavailableModal(errorInfo) {
             <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
             <span>重试连接</span>
           </button>
-          <button onclick="quitApplication()" style="background: linear-gradient(180deg, #ff3b30 0%, #d32f2f 100%); color: white; border: none; padding: 12px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255, 59, 48, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 59, 48, 0.3)'">
+          <button id="apiUnavailableExitBtn" style="background: linear-gradient(180deg, #ff3b30 0%, #d32f2f 100%); color: white; border: none; padding: 12px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255, 59, 48, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(255, 59, 48, 0.3)'">
             退出软件
           </button>
         </div>
@@ -589,6 +285,14 @@ function showApiUnavailableModal(errorInfo) {
   // 初始化图标
   if (typeof lucide !== 'undefined') {
     lucide.createIcons();
+  }
+  
+  // 绑定退出按钮事件
+  const exitBtn = document.getElementById('apiUnavailableExitBtn');
+  if (exitBtn) {
+    exitBtn.addEventListener('click', () => {
+      quitApplication();
+    });
   }
   
   // 阻止所有交互
@@ -655,7 +359,7 @@ async function retryConnection() {
           refreshAllData();
         }
         
-        alert('✅ 服务器连接已恢复！');
+        showCustomAlert('服务器连接已恢复！', 'success');
       }, 1000);
       
     } else {
@@ -677,7 +381,7 @@ async function retryConnection() {
     }
     
     // 显示错误提示
-    alert('❌ 连接失败，请检查网络后再试\n\n错误信息: ' + error.message);
+    showCustomAlert('连接失败，请检查网络后再试\n\n错误信息: ' + error.message, 'error');
   }
 }
 
@@ -685,7 +389,7 @@ async function retryConnection() {
 async function safeIpcInvoke(channel, ...args) {
   // 如果已经在维护模式，阻止大部分操作
   if (isMaintenanceModeActive && !isMaintenanceAllowedOperation(channel)) {
-    alert('⚠️ 服务器维护中，该功能暂时不可用');
+    showCustomAlert('服务器维护中，该功能暂时不可用', 'warning');
     return { success: false, error: '服务器维护中' };
   }
   
@@ -723,9 +427,7 @@ async function safeIpcInvoke(channel, ...args) {
 function isMaintenanceAllowedOperation(channel) {
   const allowedOperations = [
     'check-maintenance-mode',
-    'exit-maintenance-mode',
-    'get-language',
-    'save-language'
+    'exit-maintenance-mode'
   ];
   return allowedOperations.includes(channel);
 }
@@ -746,7 +448,7 @@ function setupMaintenanceInterceptors() {
       if (target.tagName === 'BUTTON' || target.closest('button')) {
         event.preventDefault();
         event.stopPropagation();
-        alert('⚠️ 服务器维护中，该功能暂时不可用');
+        showCustomAlert('服务器维护中，该功能暂时不可用', 'warning');
         return false;
       }
     }
@@ -757,7 +459,7 @@ function setupMaintenanceInterceptors() {
     if (isMaintenanceModeActive) {
       event.preventDefault();
       event.stopPropagation();
-      alert('⚠️ 服务器维护中，无法提交表单');
+      showCustomAlert('服务器维护中，无法提交表单', 'warning');
       return false;
     }
   }, true);
@@ -771,7 +473,7 @@ function setupMaintenanceInterceptors() {
         if (!target.closest('#maintenanceModal')) {
           event.preventDefault();
           event.stopPropagation();
-          alert('⚠️ 服务器维护中，链接暂时不可用');
+          showCustomAlert('服务器维护中，链接暂时不可用', 'warning');
           return false;
         }
       }
@@ -786,7 +488,7 @@ async function checkForUpdates() {
   // 检查冷却时间
   if (now - lastVersionCheckTime < versionCheckCooldown) {
     const remainingTime = Math.ceil((versionCheckCooldown - (now - lastVersionCheckTime)) / 1000);
-    alert(`请等待 ${remainingTime} 秒后再次检查版本`);
+    showCustomAlert(`请等待 ${remainingTime} 秒后再次检查版本`, 'warning');
     return;
   }
   
@@ -800,7 +502,7 @@ async function checkForUpdates() {
       // 验证返回的数据完整性
       if (!result.currentVersion || !result.latestVersion) {
         console.error('❌ 版本检测返回数据不完整:', result);
-        alert('版本检测失败：服务器返回数据异常');
+        showCustomAlert('版本检测失败：服务器返回数据异常', 'error');
         return;
       }
       
@@ -809,55 +511,28 @@ async function checkForUpdates() {
       if (result.hasUpdate) {
         showVersionUpdateModal(result);
       } else {
-        if (confirm(`当前版本 ${result.currentVersion} 已是最新版本\n\n是否要访问GitHub查看所有版本？`)) {
-          openDownloadUrl();
-        }
+        const viewGithub = await showCustomConfirm({
+          title: '已是最新版本',
+          message: `当前版本 ${result.currentVersion} 已是最新版本`,
+          subMessage: false,
+          confirmText: '查看GitHub',
+          type: 'info'
+        });
+        if (viewGithub) openDownloadUrl();
       }
     } else {
       console.error('❌ 版本检测失败:', result.error);
-      alert('检查版本更新失败: ' + (result.error || '未知错误'));
+      showCustomAlert('检查版本更新失败: ' + (result.error || '未知错误'), 'error');
     }
   } catch (error) {
     console.error('❌ 检查版本更新异常:', error);
-    alert('检查版本更新失败: ' + error.message);
+    showCustomAlert('检查版本更新失败: ' + error.message, 'error');
   }
 }
 
-// 语言切换功能
+// 初始化UI函数（已移除多语言支持）
 function updateUILanguage() {
-  const lang = getCurrentLanguage();
-  
-  // 更新标签页
-  const tabs = document.querySelectorAll('.tab');
-  if (tabs[0]) tabs[0].textContent = t('tabRegister');
-  if (tabs[1]) tabs[1].textContent = t('tabSwitch');
-  if (tabs[2]) tabs[2].textContent = t('tabFreeAccounts');
-  if (tabs[3]) tabs[3].textContent = t('tabTutorial');
-  if (tabs[4]) tabs[4].textContent = t('tabSettings');
-  
-  // 更新所有带 data-i18n 属性的元素
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-      el.placeholder = t(key);
-    } else {
-      el.textContent = t(key);
-    }
-  });
-  
-  // 更新所有带 data-i18n-placeholder 属性的元素
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const key = el.getAttribute('data-i18n-placeholder');
-    el.placeholder = t(key);
-  });
-  
-  // 更新所有带 data-i18n-html 属性的元素（支持HTML内容）
-  document.querySelectorAll('[data-i18n-html]').forEach(el => {
-    const key = el.getAttribute('data-i18n-html');
-    el.innerHTML = t(key);
-  });
-  
-  // 重新渲染账号列表（更新徽标文本）
+  // 重新渲染账号列表
   if (typeof loadAccounts === 'function') {
     loadAccounts();
   }
@@ -869,19 +544,9 @@ function updateUILanguage() {
   }
 }
 
-// 页面加载完成后更新语言
+// 页面加载完成后初始化
 window.addEventListener('DOMContentLoaded', () => {
   updateUILanguage();
-  
-  // 同步语言选择器
-  const currentLang = getCurrentLanguage();
-  const modalSelect = document.getElementById('modalLanguageSelect');
-  const settingsSelect = document.getElementById('languageSelect');
-  if (modalSelect) modalSelect.value = currentLang;
-  if (settingsSelect) settingsSelect.value = currentLang;
-  
-  // 注意：维护模式检查已由 versionManager 统一管理
-  // 不再在此处单独检查
   
   // 添加全局按钮点击拦截器
   setupMaintenanceInterceptors();
@@ -906,7 +571,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // 监听主进程发送的强制更新警告
   window.ipcRenderer.on('show-force-update-warning', () => {
     if (isForceUpdateActive) {
-      alert('⚠️ 当前版本已停止支持，无法刷新页面。\n\n请点击"立即更新"按钮下载最新版本。');
+      showCustomAlert('当前版本已停止支持，无法刷新页面。\n\n请点击“立即更新”按钮下载最新版本。', 'warning');
       
       // 确保强制更新弹窗显示
       const modal = document.getElementById('versionUpdateModal');
@@ -984,15 +649,11 @@ function showVersionUpdateModal(versionInfo) {
   
   console.log('✅ 显示版本更新弹窗:', versionInfo);
   
-  // 设置标题
+  // 设置标题（图标在 HTML 中已定义，这里只设置文本）
   if (versionInfo.forceUpdate) {
-    title.innerHTML = '<i data-lucide="alert-circle" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;"></i>强制更新';
+    title.textContent = '强制更新';
   } else {
-    title.innerHTML = '<i data-lucide="sparkles" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;"></i>发现新版本';
-  }
-  // 初始化图标
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
+    title.textContent = '发现新版本';
   }
   
   // 设置更新内容，支持换行显示
@@ -1078,28 +739,24 @@ function showVersionUpdateModal(versionInfo) {
     }
   }
   
-  // 设置提示信息
+  // 设置提示信息（图标在 HTML 中已定义，这里只设置文本）
   if (versionInfo.forceUpdate) {
-    notice.innerHTML = '<i data-lucide="alert-triangle" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;"></i>当前版本已停止支持，请立即更新或退出程序';
+    notice.textContent = '当前版本已停止支持，请立即更新或退出程序';
     notice.parentElement.style.background = '#ffebee';
     notice.parentElement.style.borderColor = '#f44336';
     notice.style.color = '#d32f2f';
   } else if (versionInfo.isSupported === false) {
     // 维护模式：非强制更新但版本不再支持
-    notice.innerHTML = '<i data-lucide="alert-triangle" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;"></i>当前版本已进入维护模式，请立即更新或退出程序';
+    notice.textContent = '当前版本已进入维护模式，请立即更新或退出程序';
     notice.parentElement.style.background = '#fff3e0';
     notice.parentElement.style.borderColor = '#ff9800';
     notice.style.color = '#e65100';
   } else {
     // 正常非强制更新
-    notice.innerHTML = '<i data-lucide="lightbulb" style="width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;"></i>为了确保最佳体验和安全性，强烈建议及时更新到最新版本';
+    notice.textContent = '为了确保最佳体验和安全性，强烈建议及时更新到最新版本';
     notice.parentElement.style.background = '#fff8e1';
     notice.parentElement.style.borderColor = '#ffcc02';
     notice.style.color = '#f57c00';
-  }
-  // 初始化图标
-  if (typeof lucide !== 'undefined') {
-    lucide.createIcons();
   }
   
   // 显示弹窗（不可关闭）
@@ -1245,7 +902,7 @@ function showMaintenanceModal(maintenanceInfo) {
         if (typeof lucide !== 'undefined') {
           lucide.createIcons();
         }
-        alert('请等待系统自动检测维护模式恢复');
+        showCustomAlert('请等待系统自动检测维护模式恢复', 'info');
       }, 2000);
     });
   }
@@ -1253,10 +910,15 @@ function showMaintenanceModal(maintenanceInfo) {
   // 绑定退出按钮
   const exitButton = document.getElementById('maintenanceExitBtn');
   if (exitButton) {
-    exitButton.addEventListener('click', () => {
-      if (confirm('确定要退出应用吗？')) {
-        window.close();
-      }
+    exitButton.addEventListener('click', async () => {
+      const confirmed = await showCustomConfirm({
+        title: '退出应用',
+        message: '确定要退出应用吗？',
+        subMessage: false,
+        confirmText: '退出',
+        type: 'warning'
+      });
+      if (confirmed) quitApplication();
     });
   }
   
@@ -1320,7 +982,7 @@ function disableAllFunctions() {
     `;
     overlay.innerHTML = `
       <div style="text-align: center;">
-        <div style="font-size: 48px; margin-bottom: 10px;">🔧</div>
+        <i data-lucide="wrench" style="width: 48px; height: 48px; color: #ff9500; margin-bottom: 10px;"></i>
         <div>服务器维护中，功能暂时不可用</div>
       </div>
     `;
@@ -1335,7 +997,7 @@ function preventMaintenanceKeyEvents(event) {
   if (event.key === 'F5' || (event.ctrlKey && event.key === 'r') || (event.metaKey && event.key === 'r')) {
     event.preventDefault();
     event.stopPropagation();
-    alert('⚠️ 服务器维护中，无法刷新页面');
+    showCustomAlert('服务器维护中，无法刷新页面', 'warning');
     return false;
   }
   
@@ -1507,13 +1169,18 @@ function removeForceUpdateProtection() {
 
 // 防止页面刷新的事件处理器
 function preventRefreshDuringForceUpdate(event) {
+  // 如果正在退出，不阻止也不提示
+  if (isQuitting) {
+    return;
+  }
+  
   if (isForceUpdateActive) {
     event.preventDefault();
     event.returnValue = '当前版本已停止支持，必须更新才能继续使用。请点击"立即更新"按钮下载最新版本。';
     
     // 显示提示
     setTimeout(() => {
-      alert('⚠️ 当前版本已停止支持，无法刷新页面。\n\n请点击"立即更新"按钮下载最新版本。');
+      showCustomAlert('当前版本已停止支持，无法刷新页面。\n\n请点击“立即更新”按钮下载最新版本。', 'warning');
     }, 100);
     
     return '当前版本已停止支持，必须更新才能继续使用。';
@@ -1536,7 +1203,7 @@ function preventRefreshKeysDuringForceUpdate(event) {
       event.stopPropagation();
       
       // 显示提示
-      alert('⚠️ 当前版本已停止支持，无法刷新页面。\n\n请点击"立即更新"按钮下载最新版本。');
+      showCustomAlert('当前版本已停止支持，无法刷新页面。\n\n请点击“立即更新”按钮下载最新版本。', 'warning');
       
       // 确保弹窗仍然显示
       const modal = document.getElementById('versionUpdateModal');
@@ -1554,13 +1221,13 @@ function preventRefreshKeysDuringForceUpdate(event) {
 function closeVersionUpdateModal() {
   if (versionUpdateInfo && versionUpdateInfo.forceUpdate) {
     // 强制更新时不允许关闭
-    alert('⚠️ 当前版本已停止支持，必须更新才能继续使用。\n\n请点击"立即更新"按钮下载最新版本。');
+    showCustomAlert('当前版本已停止支持，必须更新才能继续使用。\n\n请点击“立即更新”按钮下载最新版本。', 'warning');
     return;
   }
   
   if (versionUpdateInfo && versionUpdateInfo.isSupported === false) {
     // 维护模式时不允许关闭
-    alert('⚠️ 当前版本已进入维护模式，为了您的使用安全，强烈建议立即更新。\n\n请点击"立即下载最新版本"按钮。');
+    showCustomAlert('当前版本已进入维护模式，为了您的使用安全，强烈建议立即更新。\n\n请点击“立即下载最新版本”按钮。', 'warning');
     return;
   }
   
@@ -1723,7 +1390,7 @@ function renderSwitchAccountsGrid() {
   const list = (switchAccountsCache || []).filter(acc => !usedAccountIds.has(acc.id));
 
   if (!list || list.length === 0) {
-    grid.innerHTML = `<div style="color:#999; padding:10px;">${t('noAccounts')}</div>`;
+    grid.innerHTML = `<div style="color:#999; padding:10px;">暂无账号</div>`;
     return;
   }
 
@@ -1733,14 +1400,14 @@ function renderSwitchAccountsGrid() {
     const borderColor = selected ? '#0071e3' : 'rgba(0,0,0,0.06)';
     const bg = selected ? '#eaf3ff' : '#f5f5f7';
     const statusBadge = expiry.isExpired 
-      ? `<span class="badge" style="background:#e74c3c;">${t('expired')}</span>`
+      ? `<span class="badge" style="background:#e74c3c;">已到期</span>`
       : `<span class="badge" style="background:${expiry.expiryColor};">${expiry.expiryText}</span>`;
 
     return `
       <div class="switch-account-card" data-id="${acc.id}" style="background:${bg}; border-color:${borderColor};">
         ${statusBadge}
         <div class="email">${acc.email}</div>
-        <div class="meta">${t('expiryDate')}: ${expiry.expiryDate.toLocaleDateString()}</div>
+        <div class="meta">到期: ${expiry.expiryDate.toLocaleDateString()}</div>
       </div>
     `;
   }).join('');
@@ -1752,8 +1419,7 @@ function renderSwitchAccountsGrid() {
       const selectedEl = document.getElementById('selectedSwitchAccount');
       const acc = switchAccountsCache.find(a => a.id === id);
       if (selectedEl && acc) {
-        selectedEl.textContent = `${t('selectedAccount')}：${acc.email}`;
-        selectedEl.removeAttribute('data-i18n');
+        selectedEl.textContent = `已选择账号：${acc.email}`;
       }
       renderSwitchAccountsGrid();
     });
@@ -1766,21 +1432,21 @@ function renderUsedAccountsGrid() {
   if (!grid) return;
   const list = (switchAccountsCache || []).filter(acc => usedAccountIds.has(acc.id));
   if (list.length === 0) {
-    grid.innerHTML = `<div style="color:#999; padding:10px;">${t('noUsedAccounts')}</div>`;
+    grid.innerHTML = `<div style="color:#999; padding:10px;">暂无已使用账号</div>`;
     return;
   }
   grid.innerHTML = list.map(acc => {
     const expiry = calculateExpiry(acc.createdAt);
     const statusBadge = expiry.isExpired 
-      ? `<span class="badge" style="background:#e74c3c;">${t('expired')}</span>`
+      ? `<span class="badge" style="background:#e74c3c;">已到期</span>`
       : `<span class="badge" style="background:${expiry.expiryColor};">${expiry.expiryText}</span>`;
     return `
       <div class="used-account-card" data-id="${acc.id}">
         ${statusBadge}
         <div class="email">${acc.email}</div>
         <div class="meta" style="display:flex; justify-content:space-between; align-items:center;">
-          <span>${t('expiryDate')}: ${expiry.expiryDate.toLocaleDateString()}</span>
-          <button class="btn" data-action="restore" style="padding:4px 8px; font-size:11px; margin:0;">${t('restore')}</button>
+          <span>到期: ${expiry.expiryDate.toLocaleDateString()}</span>
+          <button class="btn" data-action="restore" style="padding:4px 8px; font-size:11px; margin:0;">撤销</button>
         </div>
       </div>
     `;
@@ -1831,18 +1497,23 @@ async function startBatchRegister() {
   const threads = parseInt(document.getElementById('registerThreads').value);
   
   if (!count || count < 1) {
-    addRegisterLog('请输入有效的注册数量', 'error');
+    showCustomAlert('请输入有效的注册数量', 'warning');
     return;
   }
   
   if (!threads || threads < 1) {
-    addRegisterLog('请输入有效的并发数', 'error');
+    showCustomAlert('请输入有效的并发数', 'warning');
     return;
   }
   
   if (!currentConfig.emailConfig) {
-    addRegisterLog('请先配置IMAP邮箱', 'error');
+    showCustomAlert('请先在系统设置中配置IMAP邮箱', 'warning');
     return;
+  }
+  
+  // 切换到进度视图
+  if (typeof showRegisterProgress === 'function') {
+    showRegisterProgress();
   }
   
   // 设置注册状态
@@ -1853,6 +1524,12 @@ async function startBatchRegister() {
   addRegisterLog(`开始批量注册，总数量: ${count}, 并发数: ${threads}`, 'info');
   
   try {
+    // 注册前强制刷新域名配置（避免使用缓存）
+    if (window.DomainManager && window.DomainManager.init) {
+      await window.DomainManager.init();
+      addRegisterLog(`📋 已刷新域名配置: ${currentConfig.emailDomains.join(', ')}`, 'info');
+    }
+    
     const result = await window.ipcRenderer.invoke('batch-register', {
       count,
       threads,
@@ -1932,30 +1609,37 @@ window.ipcRenderer.on('registration-log', (event, log) => {
  * 计算账号到期信息
  * Pro试用期为13天
  */
-function calculateExpiry(createdAt) {
-  if (!createdAt) {
+function calculateExpiry(createdAt, expiresAt) {
+  let expiry;
+  
+  // 优先使用 API 返回的到期时间
+  if (expiresAt) {
+    expiry = new Date(expiresAt);
+  } else if (createdAt) {
+    // 如果没有 expiresAt，根据创建时间计算（13天）
+    const created = new Date(createdAt);
+    expiry = new Date(created);
+    expiry.setDate(expiry.getDate() + 13);
+  } else {
+    // 没有任何时间信息
     return {
       expiryDate: null,
       daysLeft: null,
-      isExpired: true,
-      expiryText: '未知',
+      isExpired: false,
+      expiryText: '-',
       expiryColor: '#999999'
     };
   }
   
-  const created = new Date(createdAt);
   const now = new Date();
-  const expiryDate = new Date(created);
-  expiryDate.setDate(expiryDate.getDate() + 13); // 13天后到期
-  
-  const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+  const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
   const isExpired = daysLeft <= 0;
   
   return {
-    expiryDate,
+    expiryDate: expiry,
     daysLeft,
     isExpired,
-    expiryText: isExpired ? t('expired') : `${t('daysLeft')}${daysLeft}${t('days')}`,
+    expiryText: isExpired ? '已到期' : `剩余${daysLeft}天`,
     expiryColor: isExpired ? '#e74c3c' : (daysLeft <= 3 ? '#ff9500' : '#007aff')
   };
 }
@@ -2000,18 +1684,23 @@ async function loadAccounts() {
   `;
   
   html += accounts.map((acc, index) => {
-    const expiry = calculateExpiry(acc.createdAt);
+    const expiry = calculateExpiry(acc.createdAt, acc.expiresAt);
     
     // 获取 Token 状态
     const tokenStatus = getTokenStatus(acc);
 
-    // 统计分类（沿用原有基于到期时间的统计逻辑）
-    if (expiry.isExpired) {
-      expiredCount++;
-    } else if (expiry.daysLeft <= 3) {
-      warningCount++;
-      activeCount++;
+    // 统计分类（只有有 expiresAt 时才统计到期状态）
+    if (acc.expiresAt) {
+      if (expiry.isExpired) {
+        expiredCount++;
+      } else if (expiry.daysLeft <= 3) {
+        warningCount++;
+        activeCount++;
+      } else {
+        activeCount++;
+      }
     } else {
+      // 没有到期时间的账号算作活跃
       activeCount++;
     }
 
@@ -2077,12 +1766,17 @@ async function loadAccounts() {
     lucide.createIcons();
   }
   
-  // 更新统计信息
-  document.getElementById('accountStats').style.display = 'block';
-  document.getElementById('totalCount').textContent = totalCount;
-  document.getElementById('activeCount').textContent = activeCount;
-  document.getElementById('warningCount').textContent = warningCount;
-  document.getElementById('expiredCount').textContent = expiredCount;
+  // 更新统计信息 - 显示顶部信息行
+  const topInfoRow = document.getElementById('topInfoRow');
+  if (topInfoRow) topInfoRow.style.display = 'flex';
+  const totalEl = document.getElementById('totalCount');
+  const activeEl = document.getElementById('activeCount');
+  const warningEl = document.getElementById('warningCount');
+  const expiredEl = document.getElementById('expiredCount');
+  if (totalEl) totalEl.textContent = totalCount;
+  if (activeEl) activeEl.textContent = activeCount;
+  if (warningEl) warningEl.textContent = warningCount;
+  if (expiredEl) expiredEl.textContent = expiredCount;
 
   // 绑定刷新按钮点击事件（保留旧的以防兼容性问题）
   Array.from(listEl.querySelectorAll('.refresh-account-btn')).forEach(btn => {
@@ -2260,7 +1954,6 @@ window.showAccountDetailsModal = async function(account) {
               <div class="detail-grid">
                 <div class="detail-item"><span class="detail-label">邮箱:</span><span class="detail-value">${account.email || '-'}</span></div>
                 <div class="detail-item"><span class="detail-label">密码:</span><span class="detail-value">${account.password || '-'}</span></div>
-                <div class="detail-item"><span class="detail-label">姓名:</span><span class="detail-value">${account.name || account.firstName + ' ' + account.lastName || '-'}</span></div>
                 <div class="detail-item"><span class="detail-label">创建时间:</span><span class="detail-value">${account.createdAt ? new Date(account.createdAt).toLocaleString('zh-CN') : '-'}</span></div>
               </div>
             </div>
@@ -2392,8 +2085,8 @@ window.refreshAccountInfo = async function(event) {
 window.switchAccount = async function(event) {
   event.stopPropagation();
   const btn = event.currentTarget;
+  const accountId = btn.getAttribute('data-id');
   const email = btn.getAttribute('data-email');
-  const password = btn.getAttribute('data-password');
   
   const shouldContinue = await showCustomConfirm(
     `确定切换到账号：${email} 吗？\n\n这将自动登录到 Windsurf 并使用该账号。`,
@@ -2403,7 +2096,20 @@ window.switchAccount = async function(event) {
   if (!shouldContinue) return;
   
   try {
-    const result = await window.ipcRenderer.invoke('switch-account', { email, password });
+    // 获取完整的账号信息（包括 refreshToken, apiKey 等）
+    const accountsResult = await window.ipcRenderer.invoke('get-accounts');
+    if (!accountsResult.success || !accountsResult.accounts) {
+      showCustomAlert('获取账号信息失败', 'error');
+      return;
+    }
+    
+    const account = accountsResult.accounts.find(acc => acc.id === accountId || acc.email === email);
+    if (!account) {
+      showCustomAlert('未找到账号信息', 'error');
+      return;
+    }
+    
+    const result = await window.ipcRenderer.invoke('switch-account', account);
     if (result.success) {
       showCustomAlert(`切换成功！\n已切换到账号：${email}`, 'success');
     } else {
@@ -2500,7 +2206,7 @@ window.deleteAccount = async function(event) {
     loadAccounts();
     showCustomAlert('账号删除成功！', 'success');
   } else {
-    showCustomAlert(t('deleteFailed') + ': ' + result.error, 'error');
+    showCustomAlert('删除失败: ' + result.error, 'error');
   }
 }
 
@@ -2982,79 +2688,9 @@ function showCustomAlert(message, type = 'info') {
   };
 }
 
-function showCustomConfirm(message, title = '确认') {
-  return new Promise((resolve) => {
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay active';
-    
-    const dialog = document.createElement('div');
-    dialog.className = 'modal-dialog modern-modal';
-    dialog.style.maxWidth = '450px';
-    
-    dialog.innerHTML = `
-      <div class="modern-modal-header">
-        <div class="modal-title-row">
-          <i data-lucide="help-circle" style="width: 24px; height: 24px; color: #007aff;"></i>
-          <h3 class="modal-title">${title}</h3>
-        </div>
-        <button class="modal-close-btn" id="confirmCloseBtn">
-          <i data-lucide="x" style="width: 20px; height: 20px;"></i>
-        </button>
-      </div>
-      <div class="modern-modal-body">
-        <div style="white-space: pre-line; font-size: 13px; line-height: 1.6; color: #1d1d1f;">${message}</div>
-      </div>
-      <div class="modern-modal-footer">
-        <button class="btn btn-secondary" id="confirmCancelBtn">
-          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
-          取消
-        </button>
-        <button class="btn btn-primary" id="confirmOkBtn">
-          <i data-lucide="check" style="width: 16px; height: 16px;"></i>
-          确定
-        </button>
-      </div>
-    `;
-    
-    overlay.appendChild(dialog);
-    document.body.appendChild(overlay);
-    
-    // 初始化图标
-    if (window.lucide) {
-      lucide.createIcons();
-    }
-    
-    const cleanup = () => {
-      overlay.remove();
-    };
-    
-    // 确定按钮
-    document.getElementById('confirmOkBtn').onclick = () => {
-      cleanup();
-      resolve(true);
-    };
-    
-    // 取消按钮
-    document.getElementById('confirmCancelBtn').onclick = () => {
-      cleanup();
-      resolve(false);
-    };
-    
-    // 关闭按钮
-    document.getElementById('confirmCloseBtn').onclick = () => {
-      cleanup();
-      resolve(false);
-    };
-    
-    // 点击遮罩关闭
-    overlay.onclick = (e) => {
-      if (e.target === overlay) {
-        cleanup();
-        resolve(false);
-      }
-    };
-  });
-}
+// showCustomConfirm 函数已移至 accountManager.js，支持两种调用方式：
+// 1. showCustomConfirm({ title, message, subMessage, confirmText, type })
+// 2. showCustomConfirm(message, title) - 兼容旧版本
 
 // ==================== 账号选择功能 ====================
 
@@ -3153,14 +2789,21 @@ async function exportAccounts() {
 }
 
 async function deleteAccount(id) {
-  if (!confirm('确定要删除这个账号吗？')) return;
+  const confirmed = await showCustomConfirm({
+    title: '删除账号',
+    message: '确定要删除这个账号吗？',
+    subMessage: '此操作无法撤销！',
+    confirmText: '删除',
+    type: 'danger'
+  });
+  if (!confirmed) return;
   
   const result = await window.ipcRenderer.invoke('delete-account', id);
   
   if (result.success) {
     loadAccounts();
   } else {
-    alert(t('deleteFailed') + ': ' + result.error);
+    showCustomAlert('删除失败: ' + result.error, 'error');
   }
 }
 
@@ -3169,36 +2812,44 @@ async function deleteAllAccounts() {
   const result = await window.ipcRenderer.invoke('load-accounts');
   
   if (!result.success || !result.accounts || result.accounts.length === 0) {
-    alert('没有账号可删除');
+    showCustomAlert('没有账号可删除', 'info');
     return;
   }
   
   const accountCount = result.accounts.length;
   
-  // 二次确认
-  const confirmMessage = `⚠️ 警告：即将删除全部 ${accountCount} 个账号！\n\n此操作不可撤销，确定要继续吗？`;
-  if (!confirm(confirmMessage)) {
-    return;
-  }
+  // 第一次确认
+  const firstConfirm = await showCustomConfirm({
+    title: '删除全部账号',
+    message: `警告：即将删除全部 ${accountCount} 个账号！`,
+    subMessage: '此操作不可撤销，确定要继续吗？',
+    confirmText: '继续',
+    type: 'danger'
+  });
+  if (!firstConfirm) return;
   
-  // 三次确认（安全措施）
-  const finalConfirm = confirm(`最后确认：真的要删除全部 ${accountCount} 个账号吗？\n\n点击"确定"将永久删除所有账号数据。`);
-  if (!finalConfirm) {
-    return;
-  }
+  // 第二次确认（安全措施）
+  const finalConfirm = await showCustomConfirm({
+    title: '最后确认',
+    message: `真的要删除全部 ${accountCount} 个账号吗？`,
+    subMessage: '点击确定将永久删除所有账号数据！',
+    confirmText: '确定删除',
+    type: 'danger'
+  });
+  if (!finalConfirm) return;
   
   try {
     // 调用删除全部账号的 IPC
     const deleteResult = await window.ipcRenderer.invoke('delete-all-accounts');
     
     if (deleteResult.success) {
-      alert(`✅ 成功删除了 ${accountCount} 个账号`);
+      showCustomAlert(`成功删除了 ${accountCount} 个账号`, 'success');
       loadAccounts(); // 刷新列表
     } else {
-      alert('删除失败：' + deleteResult.error);
+      showCustomAlert('删除失败：' + deleteResult.error, 'error');
     }
   } catch (error) {
-    alert('删除失败：' + error.message);
+    showCustomAlert('删除失败：' + error.message, 'error');
   }
 }
 */
@@ -3208,20 +2859,19 @@ function toggleDeleteMode() {
   deleteMode = !deleteMode;
   const btn = document.getElementById('deleteModeBtn');
   if (btn) {
-    btn.textContent = deleteMode ? t('deleteModeOn') : t('deleteModeOff');
+    btn.textContent = deleteMode ? '删除账号：开' : '删除账号：关';
     btn.className = deleteMode ? 'btn btn-danger' : 'btn btn-warning';
-    btn.setAttribute('data-i18n', deleteMode ? 'deleteModeOn' : 'deleteModeOff');
   }
 }
 
 function copyAccount(email, password) {
-  const text = `${t('email')}: ${email}\n${t('password')}: ${password}`;
+  const text = `邮箱: ${email}\n密码: ${password}`;
   
   // 尝试多种复制方法以确保跨平台兼容性
   if (navigator.clipboard && navigator.clipboard.writeText) {
     // 现代浏览器方法
     navigator.clipboard.writeText(text).then(() => {
-      alert(t('accountCopied'));
+      showCustomAlert('账号信息已复制到剪贴板！', 'success');
     }).catch(() => {
       // 如果现代方法失败，使用备用方法
       fallbackCopyToClipboard(text);
@@ -3251,7 +2901,7 @@ function fallbackCopyToClipboard(text) {
     document.body.removeChild(textArea);
     
     if (successful) {
-      alert(t('accountCopied'));
+      showCustomAlert('账号信息已复制到剪贴板！', 'success');
     } else {
       // 如果都失败了，使用Electron的clipboard API
       copyWithElectron(text);
@@ -3267,7 +2917,7 @@ async function copyWithElectron(text) {
     // 使用Electron的clipboard API
     const result = await window.ipcRenderer.invoke('copy-to-clipboard', text);
     if (result.success) {
-      alert(t('accountCopied'));
+      showCustomAlert('账号信息已复制到剪贴板！', 'success');
     } else {
       // 最后的备用方案：显示文本让用户手动复制
       showManualCopyDialog(text);
@@ -3370,15 +3020,22 @@ window.ipcRenderer.on('switch-error', (event, error) => {
   }
 });
 
-async function switchAccount() {
+async function switchSelectedAccount() {
   const accountId = selectedSwitchAccountId;
   
   if (!accountId) {
-    alert(t('pleaseSelectAccount'));
+    showCustomAlert('请选择要切换的账号', 'warning');
     return;
   }
   
-  if (!confirm(t('confirmSwitch'))) return;
+  const confirmed = await showCustomConfirm({
+    title: '自动化切换',
+    message: '完整自动化切换将关闭并重置 Windsurf，然后启动并完成初始设置',
+    subMessage: '确定要继续吗？',
+    confirmText: '开始切换',
+    type: 'info'
+  });
+  if (!confirmed) return;
   
   const accountsResult = await window.ipcRenderer.invoke('get-accounts');
   const accounts = accountsResult.success ? (accountsResult.accounts || []) : [];
@@ -3446,29 +3103,6 @@ async function loadCurrentMachineId() {
   }
 }
 
-async function clearWindsurf() {
-  if (!confirm('确定要重置Windsurf机器ID吗？\n\n这将生成新的机器标识，但保留其他配置。')) return;
-  
-  const result = await window.ipcRenderer.invoke('reset-machine-id');
-  
-  const statusEl = document.getElementById('switchStatus');
-  if (result.success) {
-    statusEl.innerHTML = `
-      <div class="status-message status-success">
-        ${result.message}
-      </div>
-    `;
-    // 重新加载机器ID
-    loadCurrentMachineId();
-  } else {
-    statusEl.innerHTML = `
-      <div class="status-message status-error">
-        清除失败: ${result.error}
-      </div>
-    `;
-  }
-}
-
 // ==================== 配置 ====================
 
 // 仅负责根据 currentConfig 渲染设置界面，不重新从存储加载配置
@@ -3495,12 +3129,6 @@ function renderSettingsFromCurrentConfig() {
     if (imapPort) imapPort.value = '993';
     if (imapUser) imapUser.value = '';
     if (imapPassword) imapPassword.value = '';
-  }
-  
-  // 加载语言设置
-  const languageSelect = document.getElementById('languageSelect');
-  if (languageSelect) {
-    languageSelect.value = getCurrentLanguage();
   }
   
   // 加载密码配置
@@ -3555,46 +3183,6 @@ function loadSettings() {
   console.log('🎨 开始渲染设置界面...');
   renderSettingsFromCurrentConfig();
   console.log('✅ 设置界面渲染完成');
-}
-
-// 切换语言（从设置页面）
-async function changeLanguage() {
-  const settingsSelect = document.getElementById('languageSelect');
-  
-  if (!settingsSelect) {
-    console.error('找不到语言选择器');
-    return;
-  }
-  
-  const newLang = settingsSelect.value;
-  
-  // 保存到 localStorage
-  setLanguage(newLang);
-  
-  // 同步弹窗选择器的值
-  const modalSelect = document.getElementById('modalLanguageSelect');
-  if (modalSelect) modalSelect.value = newLang;
-  
-  // 通过 IPC 保存到文件
-  try {
-    await window.ipcRenderer.invoke('save-language', newLang);
-  } catch (err) {
-    console.error('保存语言设置失败:', err);
-  }
-  
-  // 更新UI
-  updateUILanguage();
-}
-
-// 重置语言选择
-function resetLanguageSelection() {
-  if (confirm(t('resetLanguageTip') + '\n\n' + (getCurrentLanguage() === 'zh-CN' ? '确定要重新选择语言吗？' : 'Are you sure you want to reset language selection?'))) {
-    // 清除 localStorage
-    localStorage.removeItem('app_language');
-    
-    // 重新加载到语言选择页面
-    window.location.href = 'language-selector.html';
-  }
 }
 
 // 域名管理功能已移至 domainManager.js
@@ -3794,7 +3382,7 @@ async function testImap() {
   };
   
   if (!config.user || !config.password) {
-    showCenterMessage(t('pleaseCompleteIMAPConfig'), 'warning');
+    showCenterMessage('请填写完整的IMAP配置', 'warning');
     return;
   }
   
@@ -3954,8 +3542,6 @@ function initSettingsChangeListener() {
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
     initSettingsChangeListener();
-    // 启动赞助弹窗定时器
-    startSponsorPopupTimer();
   });
 }
 
@@ -3970,17 +3556,15 @@ async function getCurrentAccount() {
     const currentAccountUsedCredits = document.getElementById('currentAccountUsedCredits');
     const currentAccountUsage = document.getElementById('currentAccountUsage');
     const currentAccountExpires = document.getElementById('currentAccountExpires');
+    const currentAccountType = document.getElementById('currentAccountType');
     
-    // 始终显示当前登录区域
-    if (currentAccountInfo) {
-      currentAccountInfo.style.display = 'block';
-    }
+    // topInfoRow 由统计信息加载时统一显示
     
     if (result && result.success && result.email) {
       // 有登录信息
       if (currentAccountEmail) {
         currentAccountEmail.textContent = result.email;
-        currentAccountEmail.style.color = '#1d1d1f';
+        currentAccountEmail.style.color = '';
       }
       
       // 从本地 accounts.json 读取账号详情
@@ -3998,37 +3582,66 @@ async function getCurrentAccount() {
         
         if (account) {
           // 找到账号,显示详情
-          if (currentAccountDetails) {
-            currentAccountDetails.style.display = 'flex';
-          }
+          const credits = account.credits || account.credit || 0;
+          const usedCredits = account.usedCredits || 0;
+          const accountType = account.type || 'Free';
           
           // 显示总积分
           if (currentAccountCredits) {
-            const credits = account.credits || account.credit || 0;
-            currentAccountCredits.querySelector('span').textContent = `积分: ${credits.toLocaleString()}`;
+            currentAccountCredits.textContent = credits.toLocaleString();
           }
           
           // 显示已使用积分
           if (currentAccountUsedCredits) {
-            const usedCredits = account.usedCredits || 0;
-            currentAccountUsedCredits.querySelector('span').textContent = `已用: ${usedCredits.toLocaleString()}`;
+            currentAccountUsedCredits.textContent = usedCredits.toLocaleString();
+          }
+          
+          // 更新积分进度条
+          const creditsProgressBar = document.getElementById('creditsProgressBar');
+          if (creditsProgressBar && credits > 0) {
+            const usagePercent = Math.min(100, Math.round((usedCredits / credits) * 100));
+            creditsProgressBar.style.width = `${usagePercent}%`;
+          }
+          
+          // 显示账号类型（带样式）
+          if (currentAccountType) {
+            currentAccountType.textContent = accountType;
+            // 移除所有类型class
+            currentAccountType.classList.remove('free', 'enterprise', 'teams', 'trial');
+            // 添加对应的类型class
+            const typeLower = accountType.toLowerCase();
+            if (typeLower.includes('free')) {
+              currentAccountType.classList.add('free');
+            } else if (typeLower.includes('enterprise')) {
+              currentAccountType.classList.add('enterprise');
+            } else if (typeLower.includes('team')) {
+              currentAccountType.classList.add('teams');
+            } else if (typeLower.includes('trial')) {
+              currentAccountType.classList.add('trial');
+            }
+          }
+          
+          // 更新状态指示点
+          const statusDot = document.getElementById('loginStatusDot');
+          if (statusDot) {
+            statusDot.classList.remove('offline');
           }
           
           // 显示使用率
           if (currentAccountUsage) {
             const usagePercent = account.usage || account.usagePercent || account.usage_percent || 0;
-            let usageColor = '#86868b';
+            let usageColor = '';
             
             if (usagePercent >= 90) {
-              usageColor = '#ff3b30'; // 红色 - 使用率很高
+              usageColor = '#ef4444';
             } else if (usagePercent >= 70) {
-              usageColor = '#ff9500'; // 橙色 - 使用率较高
+              usageColor = '#f59e0b';
             } else if (usagePercent >= 50) {
-              usageColor = '#ffcc00'; // 黄色 - 使用率中等
+              usageColor = '#eab308';
             }
             
-            currentAccountUsage.querySelector('span').textContent = `使用率: ${usagePercent}%`;
-            currentAccountUsage.querySelector('span').style.color = usageColor;
+            currentAccountUsage.textContent = `${usagePercent}%`;
+            currentAccountUsage.style.color = usageColor;
           }
           
           // 显示到期时间
@@ -4039,79 +3652,92 @@ async function getCurrentAccount() {
               const daysLeft = Math.ceil((expiresDate - now) / (1000 * 60 * 60 * 24));
               
               let expiresText = '';
-              let expiresColor = '#86868b';
+              let expiresColor = '';
               
               if (daysLeft < 0) {
                 expiresText = '已过期';
-                expiresColor = '#ff3b30';
+                expiresColor = '#ef4444';
               } else if (daysLeft === 0) {
                 expiresText = '今天到期';
-                expiresColor = '#ff9500';
+                expiresColor = '#f59e0b';
               } else if (daysLeft <= 7) {
-                expiresText = `${daysLeft}天后到期`;
-                expiresColor = '#ff9500';
+                expiresText = `${daysLeft}天后`;
+                expiresColor = '#f59e0b';
               } else {
-                expiresText = expiresDate.toLocaleDateString('zh-CN');
+                expiresText = expiresDate.toLocaleDateString('zh-CN', {month:'short', day:'numeric'});
               }
               
-              currentAccountExpires.querySelector('span').textContent = `到期: ${expiresText}`;
-              currentAccountExpires.querySelector('span').style.color = expiresColor;
+              currentAccountExpires.textContent = expiresText;
+              currentAccountExpires.style.color = expiresColor;
             } else {
-              currentAccountExpires.querySelector('span').textContent = '到期: 未知';
+              currentAccountExpires.textContent = '--';
             }
           }
         } else {
           // 未找到账号
-          if (currentAccountDetails) {
-            currentAccountDetails.style.display = 'flex';
-          }
           if (currentAccountCredits) {
-            currentAccountCredits.querySelector('span').textContent = '当前账号不在列表中';
-            currentAccountCredits.querySelector('span').style.color = '#ff9500';
+            currentAccountCredits.textContent = '不在列表';
+            currentAccountCredits.style.color = '#f59e0b';
           }
           if (currentAccountUsedCredits) {
-            currentAccountUsedCredits.style.display = 'none';
+            currentAccountUsedCredits.textContent = '--';
           }
           if (currentAccountUsage) {
-            currentAccountUsage.style.display = 'none';
+            currentAccountUsage.textContent = '--';
           }
           if (currentAccountExpires) {
-            currentAccountExpires.style.display = 'none';
+            currentAccountExpires.textContent = '--';
           }
+          if (currentAccountType) {
+            currentAccountType.textContent = '--';
+            currentAccountType.classList.remove('free', 'enterprise', 'teams', 'trial');
+          }
+          // 重置进度条
+          const creditsProgressBar = document.getElementById('creditsProgressBar');
+          if (creditsProgressBar) creditsProgressBar.style.width = '0%';
+          // 更新状态指示点为离线
+          const statusDot = document.getElementById('loginStatusDot');
+          if (statusDot) statusDot.classList.add('offline');
         }
       } catch (error) {
         console.error('读取账号详情失败:', error);
-        // 读取失败,隐藏详情
-        if (currentAccountDetails) {
-          currentAccountDetails.style.display = 'none';
-        }
+        // 读取失败,显示默认值
+        if (currentAccountCredits) currentAccountCredits.textContent = '--';
+        if (currentAccountUsedCredits) currentAccountUsedCredits.textContent = '--';
+        if (currentAccountUsage) currentAccountUsage.textContent = '--';
+        if (currentAccountExpires) currentAccountExpires.textContent = '--';
+        if (currentAccountType) currentAccountType.textContent = '--';
       }
     } else {
       // 没有登录信息
       if (currentAccountEmail) {
         currentAccountEmail.textContent = '未登录';
-        currentAccountEmail.style.color = '#86868b';
+        currentAccountEmail.style.color = 'var(--text-muted)';
       }
-      if (currentAccountDetails) {
-        currentAccountDetails.style.display = 'none';
+      // 显示默认值
+      if (currentAccountCredits) currentAccountCredits.textContent = '--';
+      if (currentAccountUsedCredits) currentAccountUsedCredits.textContent = '--';
+      if (currentAccountUsage) currentAccountUsage.textContent = '--';
+      if (currentAccountExpires) currentAccountExpires.textContent = '--';
+      if (currentAccountType) {
+        currentAccountType.textContent = '--';
+        currentAccountType.classList.remove('free', 'enterprise', 'teams', 'trial');
       }
+      // 重置进度条
+      const creditsProgressBar = document.getElementById('creditsProgressBar');
+      if (creditsProgressBar) creditsProgressBar.style.width = '0%';
+      // 更新状态指示点为离线
+      const statusDot = document.getElementById('loginStatusDot');
+      if (statusDot) statusDot.classList.add('offline');
     }
   } catch (error) {
     console.error('获取当前登录账号失败:', error);
-    const currentAccountInfo = document.getElementById('currentAccountInfo');
     const currentAccountEmail = document.getElementById('currentAccountEmail');
-    const currentAccountDetails = document.getElementById('currentAccountDetails');
     
     // 显示错误状态
-    if (currentAccountInfo) {
-      currentAccountInfo.style.display = 'block';
-    }
     if (currentAccountEmail) {
       currentAccountEmail.textContent = '获取失败';
-      currentAccountEmail.style.color = '#ff3b30';
-    }
-    if (currentAccountDetails) {
-      currentAccountDetails.style.display = 'none';
+      currentAccountEmail.style.color = '#ef4444';
     }
   }
 }
@@ -4251,7 +3877,20 @@ window.switchAccountFromMenu = async function(email, password) {
   if (!shouldContinue) return;
   
   try {
-    const result = await window.ipcRenderer.invoke('switch-account', { email, password });
+    // 获取完整的账号信息
+    const accountsResult = await window.ipcRenderer.invoke('get-accounts');
+    if (!accountsResult.success || !accountsResult.accounts) {
+      showToast('获取账号信息失败', 'error');
+      return;
+    }
+    
+    const account = accountsResult.accounts.find(acc => acc.email === email);
+    if (!account) {
+      showToast('未找到账号信息', 'error');
+      return;
+    }
+    
+    const result = await window.ipcRenderer.invoke('switch-account', account);
     if (result.success) {
       showToast(`切换成功！已切换到：${email}`, 'success');
     } else {
@@ -4440,20 +4079,13 @@ function showBatchTokenProgressModal() {
   const modal = document.getElementById('batchTokenProgressModal');
   if (modal) {
     // 重置状态
-    document.getElementById('batchTokenProgressText').textContent = '0 / 0';
+    document.getElementById('batchTokenProgressText').textContent = '0/0';
     document.getElementById('batchTokenProgressFill').style.width = '0%';
     document.getElementById('batchTokenCurrentEmail').textContent = '等待开始...';
-    document.getElementById('batchTokenCurrentStatus').textContent = '';
     document.getElementById('batchTokenSuccessCount').textContent = '0';
     document.getElementById('batchTokenFailCount').textContent = '0';
     document.getElementById('batchTokenTotalCount').textContent = '0';
-    document.getElementById('batchTokenLogContainer').innerHTML = '<div style="color: #86868b;">正在启动...</div>';
-    
-    // 设置按钮为取消状态
-    const closeBtn = document.getElementById('batchTokenCloseBtn');
-    closeBtn.disabled = false; // 允许点击取消
-    closeBtn.textContent = '取消';
-    closeBtn.className = 'btn btn-danger'; // 红色按钮表示取消
+    document.getElementById('batchTokenLogContainer').innerHTML = '<div>正在启动...</div>';
 
     modal.style.display = 'flex';
     setTimeout(() => modal.classList.add('active'), 10);

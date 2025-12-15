@@ -136,14 +136,14 @@ class BrowserKiller {
     
     // 防止重复调用
     if (this._cancelling) {
-      log('⚠️ 取消操作正在进行中，请稍候...');
+      log(' 取消操作正在进行中，请稍候...');
       return;
     }
 
     this._cancelling = true;
 
     try {
-      log('\n⚠️ 正在取消批量注册...');
+      log('\n 正在取消批量注册...');
       log('正在关闭所有浏览器窗口...');
       
       // 设置取消标志
@@ -155,9 +155,9 @@ class BrowserKiller {
       log('正在强制终止浏览器进程...');
       await this.forceKillBrowserProcesses();
       
-      log('✓ 已取消批量注册，所有浏览器窗口已关闭');
+      log(' 已取消批量注册，所有浏览器窗口已关闭');
     } catch (error) {
-      log(`❌ 取消操作出错: ${error.message}`);
+      log(` 取消操作出错: ${error.message}`);
       throw error;
     } finally {
       // 确保标志被重置

@@ -161,7 +161,7 @@ const ConfigManager = {
         
         const config = JSON.parse(data);
         this.configCache = config;
-        console.log('✅ 直接读取配置文件成功');
+        console.log('直接读取配置文件成功');
         return { success: true, config };
       } catch (fileError) {
         console.warn('直接读取配置文件失败:', fileError);
@@ -207,7 +207,7 @@ const ConfigManager = {
         
         // 写入配置
         await fs.writeFile(configFile, JSON.stringify(config, null, 2));
-        console.log('✅ 直接写入配置文件成功:', configFile);
+        console.log('直接写入配置文件成功:', configFile);
         return { success: true, message: '配置已保存' };
       } catch (fileError) {
         console.error('直接写入配置文件失败:', fileError);
@@ -248,7 +248,7 @@ const ConfigManager = {
         console.log('尝试使用IPC加载账号...');
         const result = await window.ipcRenderer.invoke('get-accounts');
         if (result.success) {
-          console.log('✅ IPC加载账号成功，共' + (result.accounts ? result.accounts.length : 0) + '个账号');
+          console.log('IPC加载账号成功，共' + (result.accounts ? result.accounts.length : 0) + '个账号');
           return result;
         }
       } catch (ipcError) {
@@ -278,7 +278,7 @@ const ConfigManager = {
         console.log('文件内容读取成功，尝试解析JSON...');
         
         const accounts = JSON.parse(data);
-        console.log('✅ 直接读取账号文件成功，共' + (Array.isArray(accounts) ? accounts.length : 0) + '个账号');
+        console.log('直接读取账号文件成功，共' + (Array.isArray(accounts) ? accounts.length : 0) + '个账号');
         return { success: true, accounts: Array.isArray(accounts) ? accounts : [] };
       } catch (fileError) {
         console.warn('直接读取账号文件失败:', fileError);
@@ -304,7 +304,7 @@ const ConfigManager = {
         
         // 写入账号列表
         await fs.writeFile(accountsFile, JSON.stringify(accounts, null, 2));
-        console.log('✅ 直接写入账号文件成功:', accountsFile);
+        console.log('直接写入账号文件成功:', accountsFile);
         return { success: true, message: '账号已保存' };
       } catch (error) {
         console.error('保存账号失败:', error);
@@ -385,7 +385,7 @@ const ConfigManager = {
       try {
         const result = await window.ipcRenderer.invoke('get-file-paths');
         if (result.success) {
-          console.log('✅ 通过IPC获取文件路径成功');
+          console.log('通过IPC获取文件路径成功');
           return result;
         }
       } catch (ipcError) {

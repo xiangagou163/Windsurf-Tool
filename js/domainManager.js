@@ -13,19 +13,19 @@ const DomainManager = {
    */
   async init() {
     try {
-      console.log('🔄 DomainManager 初始化...');
+      console.log('DomainManager 初始化...');
       
       // 优先从 renderer.js 的 currentConfig 读取（避免重复加载）
       if (window.currentConfig && Array.isArray(window.currentConfig.emailDomains)) {
         this.domains = [...window.currentConfig.emailDomains];
-        console.log('✅ 从 currentConfig 加载域名:', this.domains);
+        console.log('从 currentConfig 加载域名:', this.domains);
         this.renderDomains();
         return;
       }
       
       // 备用方案：从 ConfigManager 加载
       if (!window.ConfigManager) {
-        console.error('❌ ConfigManager 未定义');
+        console.error('ConfigManager 未定义');
         this.domains = [];
         this.renderDomains();
         return;
@@ -35,7 +35,7 @@ const DomainManager = {
       
       if (result.success && result.config) {
         this.domains = result.config.emailDomains || [];
-        console.log('✅ 从 ConfigManager 加载域名:', this.domains);
+        console.log('从 ConfigManager 加载域名:', this.domains);
         
         // 同步到 currentConfig
         if (window.currentConfig) {
@@ -44,12 +44,12 @@ const DomainManager = {
         
         this.renderDomains();
       } else {
-        console.warn('⚠️ 加载配置失败:', result.message || '未知');
+        console.warn('加载配置失败:', result.message || '未知');
         this.domains = [];
         this.renderDomains();
       }
     } catch (error) {
-      console.error('❌ 初始化域名管理器失败:', error);
+      console.error('初始化域名管理器失败:', error);
       this.domains = [];
       this.renderDomains();
     }
@@ -98,7 +98,7 @@ const DomainManager = {
     const saveResult = await this.saveDomains();
     if (saveResult.success) {
       this.renderDomains();
-      console.log('✅ 域名添加成功:', validation.domain);
+      console.log('域名添加成功:', validation.domain);
       return { success: true, domain: validation.domain };
     } else {
       // 保存失败，回滚
@@ -123,7 +123,7 @@ const DomainManager = {
     const saveResult = await this.saveDomains();
     if (saveResult.success) {
       this.renderDomains();
-      console.log('✅ 域名删除成功:', domain);
+      console.log('域名删除成功:', domain);
       return { success: true };
     } else {
       // 保存失败，回滚
@@ -137,20 +137,20 @@ const DomainManager = {
    */
   async saveDomains() {
     try {
-      console.log('💾 开始保存域名到配置文件...');
-      console.log('📋 要保存的域名列表:', this.domains);
+      console.log('开始保存域名到配置文件...');
+      console.log('要保存的域名列表:', this.domains);
       
       // 1. 同步到 renderer.js 的 currentConfig
       if (window.currentConfig) {
         window.currentConfig.emailDomains = [...this.domains];
-        console.log('✅ 已同步到 currentConfig');
+        console.log('已同步到 currentConfig');
         
         // 2. 保存到 localStorage
         try {
           localStorage.setItem('windsurfConfig', JSON.stringify(window.currentConfig));
-          console.log('✅ 已保存到 localStorage');
+          console.log('已保存到 localStorage');
         } catch (e) {
-          console.warn('⚠️ 保存到 localStorage 失败:', e);
+          console.warn('保存到 localStorage 失败:', e);
         }
       }
       
@@ -160,21 +160,21 @@ const DomainManager = {
       
       if (result.success && result.config) {
         const config = result.config;
-        console.log('📦 当前配置:', config);
+        console.log('当前配置:', config);
         
         config.emailDomains = this.domains;
         console.log('📝 更新后的配置:', config);
         
         const saveResult = await window.ConfigManager.saveConfig(config);
-        console.log('💾 保存结果:', saveResult);
+        console.log('保存结果:', saveResult);
         
         return saveResult;
       } else {
-        console.error('❌ 加载配置失败:', result.message);
+        console.error('加载配置失败:', result.message);
         return { success: false, message: '加载配置失败' };
       }
     } catch (error) {
-      console.error('❌ 保存域名失败:', error);
+      console.error('保存域名失败:', error);
       console.error('错误堆栈:', error.stack);
       return { success: false, message: error.message };
     }
@@ -188,7 +188,7 @@ const DomainManager = {
     const countEl = document.getElementById('domainCount');
     
     if (!container) {
-      console.error('❌ 找不到域名容器元素 (ID: domainTags)');
+      console.error('找不到域名容器元素 (ID: domainTags)');
       return;
     }
     
@@ -273,15 +273,15 @@ async function addDomain() {
     }
     
     if (!input) {
-      console.error('❌ 找不到域名输入框元素');
-      alert('系统错误：找不到输入框\n请确保在系统设置页面操作');
+      console.error('找不到域名输入框元素');
+      showCustomAlert('系统错误：找不到输入框\n请确保在系统设置页面操作', 'error');
       return;
     }
     
     const domain = (input.value || '').trim();
     
     if (!domain) {
-      alert('请输入域名');
+      showCustomAlert('请输入域名', 'warning');
       input.focus();
       return;
     }
@@ -293,26 +293,32 @@ async function addDomain() {
     if (result.success) {
       input.value = '';
       input.focus();
-      console.log('✅ 域名添加成功，当前域名列表:', DomainManager.domains);
+      console.log('域名添加成功，当前域名列表:', DomainManager.domains);
     } else {
-      alert(result.message || '添加域名失败');
-      console.error('❌ 添加失败:', result.message);
+      showCustomAlert(result.message || '添加域名失败', 'error');
+      console.error('添加失败:', result.message);
     }
   } catch (error) {
-    console.error('❌ 添加域名时发生错误:', error);
+    console.error('添加域名时发生错误:', error);
     console.error('错误堆栈:', error.stack);
-    alert('发生错误: ' + error.message + '\n请查看控制台了解详情');
+    showCustomAlert('发生错误: ' + error.message + '\n请查看控制台了解详情', 'error');
   }
 }
 
 async function removeDomainByClick(domain) {
-  if (!confirm(`确定要删除域名 "${domain}" 吗？`)) {
-    return;
-  }
+  const confirmed = await showCustomConfirm({
+    title: '删除域名',
+    message: `确定要删除域名 "${domain}" 吗？`,
+    subMessage: false,
+    confirmText: '删除',
+    type: 'danger'
+  });
+  
+  if (!confirmed) return;
   
   const result = await DomainManager.removeDomain(domain);
   if (!result.success) {
-    alert(result.message);
+    showCustomAlert(result.message, 'error');
   }
 }
 

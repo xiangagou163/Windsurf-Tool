@@ -105,14 +105,14 @@ async function detectWindsurfInstallPath() {
     try {
       const exePath = path.join(installPath, 'Windsurf.exe');
       await fs.access(exePath);
-      log(`✅ 检测到 Windsurf 安装路径: ${installPath}`, 'success');
+      log(` 检测到 Windsurf 安装路径: ${installPath}`, 'success');
       return installPath;
     } catch (err) {
       // 路径不存在，继续检测
     }
   }
 
-  log('⚠️ 未能自动检测到 Windsurf 安装路径', 'warning');
+  log(' 未能自动检测到 Windsurf 安装路径', 'warning');
   return null;
 }
 
@@ -147,15 +147,15 @@ async function checkWindsurfRunning() {
  */
 async function closeWindsurf() {
   try {
-    log('🔄 正在关闭 Windsurf 应用...', 'info');
+    log(' 正在关闭 Windsurf 应用...', 'info');
     
     const { WindsurfPathDetector } = require(path.join(__dirname, '..', 'js', 'accountSwitcher'));
     await WindsurfPathDetector.closeWindsurf();
     
-    log('✅ Windsurf 应用已关闭', 'success');
+    log(' Windsurf 应用已关闭', 'success');
     return { success: true };
   } catch (error) {
-    log(`❌ 关闭 Windsurf 失败: ${error.message}`, 'error');
+    log(` 关闭 Windsurf 失败: ${error.message}`, 'error');
     return { success: false, error: error.message };
   }
 }
@@ -165,13 +165,13 @@ async function closeWindsurf() {
  */
 async function updateMachineIdFile(machineIdPath, machineId) {
   try {
-    log('🔄 正在更新 machineid 文件...', 'info');
+    log(' 正在更新 machineid 文件...', 'info');
     await fs.mkdir(path.dirname(machineIdPath), { recursive: true });
     await fs.writeFile(machineIdPath, machineId, 'utf-8');
-    log(`✅ machineid 文件已更新: ${machineId}`, 'success');
+    log(` machineid 文件已更新: ${machineId}`, 'success');
     return { success: true };
   } catch (error) {
-    log(`❌ 更新 machineid 文件失败: ${error.message}`, 'error');
+    log(` 更新 machineid 文件失败: ${error.message}`, 'error');
     return { success: false, error: error.message };
   }
 }
@@ -181,7 +181,7 @@ async function updateMachineIdFile(machineIdPath, machineId) {
  */
 async function updateStorageJson(storagePath, machineIds) {
   try {
-    log('🔄 正在更新 storage.json...', 'info');
+    log(' 正在更新 storage.json...', 'info');
     
     await fs.mkdir(path.dirname(storagePath), { recursive: true });
     
@@ -189,9 +189,9 @@ async function updateStorageJson(storagePath, machineIds) {
     try {
       const content = await fs.readFile(storagePath, 'utf-8');
       storageData = JSON.parse(content);
-      log('✅ 已读取现有 storage.json', 'success');
+      log(' 已读取现有 storage.json', 'success');
     } catch (err) {
-      log('ℹ️ 未找到现有 storage.json，将创建新文件', 'info');
+      log(' 未找到现有 storage.json，将创建新文件', 'info');
     }
     
     // 更新机器 ID 字段
@@ -206,7 +206,7 @@ async function updateStorageJson(storagePath, machineIds) {
     
     await fs.writeFile(storagePath, JSON.stringify(storageData, null, 2));
     
-    log('✅ storage.json 已更新', 'success');
+    log(' storage.json 已更新', 'success');
     log(`  - telemetry.machineId: ${machineIds.telemetryMachineId.substring(0, 16)}...`, 'info');
     log(`  - telemetry.sqmId: ${machineIds.sqmId}`, 'info');
     log(`  - telemetry.devDeviceId: ${machineIds.devDeviceId}`, 'info');
@@ -216,7 +216,7 @@ async function updateStorageJson(storagePath, machineIds) {
     
     return { success: true };
   } catch (error) {
-    log(`❌ 更新 storage.json 失败: ${error.message}`, 'error');
+    log(` 更新 storage.json 失败: ${error.message}`, 'error');
     return { success: false, error: error.message };
   }
 }
@@ -226,13 +226,13 @@ async function updateStorageJson(storagePath, machineIds) {
  */
 async function updateServiceMachineId(dbPath, serviceMachineId) {
   try {
-    log('🔄 正在更新 state.vscdb 中的 serviceMachineId...', 'info');
+    log(' 正在更新 state.vscdb 中的 serviceMachineId...', 'info');
     
     // 检查数据库文件是否存在
     try {
       await fs.access(dbPath);
     } catch (err) {
-      log('ℹ️ 数据库文件不存在，跳过更新 serviceMachineId', 'info');
+      log(' 数据库文件不存在，跳过更新 serviceMachineId', 'info');
       return { success: true };
     }
     
@@ -257,14 +257,14 @@ async function updateServiceMachineId(dbPath, serviceMachineId) {
       // 写回文件
       await fs.writeFile(dbPath, data);
       
-      log(`✅ serviceMachineId 已更新: ${serviceMachineId}`, 'success');
+      log(` serviceMachineId 已更新: ${serviceMachineId}`, 'success');
       
       return { success: true };
     } finally {
       db.close();
     }
   } catch (error) {
-    log(`❌ 更新 serviceMachineId 失败: ${error.message}`, 'error');
+    log(` 更新 serviceMachineId 失败: ${error.message}`, 'error');
     return { success: false, error: error.message };
   }
 }
@@ -274,7 +274,7 @@ async function updateServiceMachineId(dbPath, serviceMachineId) {
  */
 async function clearWindsurfCache() {
   try {
-    log('🔄 正在清除 Windsurf 缓存目录...', 'info');
+    log(' 正在清除 Windsurf 缓存目录...', 'info');
     
     const userDataPath = getWindsurfUserDataPath();
     const cacheDirectories = [
@@ -291,17 +291,17 @@ async function clearWindsurfCache() {
       try {
         await fs.access(dir);
         await fs.rm(dir, { recursive: true, force: true });
-        log(`✅ 已清除: ${path.basename(dir)}`, 'success');
+        log(` 已清除: ${path.basename(dir)}`, 'success');
         clearedCount++;
       } catch (err) {
         // 目录不存在，跳过
       }
     }
     
-    log(`✅ Windsurf 缓存目录清除完成 (清除了 ${clearedCount} 个目录)`, 'success');
+    log(` Windsurf 缓存目录清除完成 (清除了 ${clearedCount} 个目录)`, 'success');
     return { success: true };
   } catch (error) {
-    log(`⚠️ 清除 Windsurf 缓存失败（可忽略）: ${error.message}`, 'warning');
+    log(` 清除 Windsurf 缓存失败（可忽略）: ${error.message}`, 'warning');
     return { success: true };
   }
 }
@@ -311,7 +311,7 @@ async function clearWindsurfCache() {
  */
 async function resetMacIdentifiers() {
   try {
-    log('🔄 正在重置 macOS Windsurf 系统标识符...', 'info');
+    log(' 正在重置 macOS Windsurf 系统标识符...', 'info');
     
     const homeDir = os.homedir();
     const cacheDirectories = [
@@ -324,17 +324,17 @@ async function resetMacIdentifiers() {
       try {
         await fs.access(dir);
         await fs.rm(dir, { recursive: true, force: true });
-        log(`✅ 已删除缓存目录: ${path.basename(dir)}`, 'success');
+        log(` 已删除缓存目录: ${path.basename(dir)}`, 'success');
         deletedCount++;
       } catch (err) {
-        log(`ℹ️ 跳过不存在的目录: ${path.basename(dir)}`, 'info');
+        log(` 跳过不存在的目录: ${path.basename(dir)}`, 'info');
       }
     }
     
-    log(`✅ macOS Windsurf 系统标识符已重置 (删除了 ${deletedCount} 个目录)`, 'success');
+    log(` macOS Windsurf 系统标识符已重置 (删除了 ${deletedCount} 个目录)`, 'success');
     return { success: true };
   } catch (error) {
-    log(`❌ 重置 macOS Windsurf 标识符失败: ${error.message}`, 'error');
+    log(` 重置 macOS Windsurf 标识符失败: ${error.message}`, 'error');
     return { success: false, error: error.message };
   }
 }
@@ -346,18 +346,18 @@ async function fullResetWindsurf(customInstallPath = null) {
   try {
     log('', 'info');
     log('='.repeat(60), 'info');
-    log('🔄 开始重置 Windsurf 机器ID', 'info');
+    log(' 开始重置 Windsurf 机器ID', 'info');
     log('='.repeat(60), 'info');
     log('', 'info');
     
     // Windows 系统检测安装路径
     if (process.platform === 'win32' && !customInstallPath) {
-      log('📋 步骤 0: 检测 Windsurf 安装路径', 'info');
+      log(' 步骤 0: 检测 Windsurf 安装路径', 'info');
       const detectedPath = await detectWindsurfInstallPath();
       if (detectedPath) {
-        log(`✅ 已检测到安装路径: ${detectedPath}`, 'success');
+        log(` 已检测到安装路径: ${detectedPath}`, 'success');
       } else {
-        log('⚠️ 未检测到安装路径，将使用默认配置路径', 'warning');
+        log(' 未检测到安装路径，将使用默认配置路径', 'warning');
       }
       log('', 'info');
     }
@@ -370,13 +370,13 @@ async function fullResetWindsurf(customInstallPath = null) {
         throw new Error(closeResult.error);
       }
     } else {
-      log('ℹ️ Windsurf 未运行，无需关闭', 'info');
+      log(' Windsurf 未运行，无需关闭', 'info');
     }
     
     log('', 'info');
-    log('📋 步骤 1: 生成新的机器ID', 'info');
+    log(' 步骤 1: 生成新的机器ID', 'info');
     const machineIds = generateMachineIds();
-    log('✅ 已生成新的机器ID', 'success');
+    log(' 已生成新的机器ID', 'success');
     log(`  - 主机器ID: ${machineIds.mainMachineId}`, 'info');
     log(`  - 遥测ID: ${machineIds.telemetryMachineId.substring(0, 16)}...`, 'info');
     log(`  - SQM ID: ${machineIds.sqmId}`, 'info');
@@ -387,7 +387,7 @@ async function fullResetWindsurf(customInstallPath = null) {
     }
     
     log('', 'info');
-    log('📋 步骤 2: 更新配置文件', 'info');
+    log(' 步骤 2: 更新配置文件', 'info');
     const paths = getWindsurfPaths();
     
     // 2.1 更新 machineid 文件
@@ -405,28 +405,28 @@ async function fullResetWindsurf(customInstallPath = null) {
     // 2.3 更新 SQLite 数据库
     const dbResult = await updateServiceMachineId(paths.stateDb, machineIds.serviceMachineId);
     if (!dbResult.success) {
-      log('⚠️ 更新数据库失败，但继续执行', 'warning');
+      log(' 更新数据库失败，但继续执行', 'warning');
     }
     
     log('', 'info');
-    log('📋 步骤 3: 清除 Windsurf 缓存目录', 'info');
+    log(' 步骤 3: 清除 Windsurf 缓存目录', 'info');
     await clearWindsurfCache();
     
     log('', 'info');
-    log('📋 步骤 4: 平台特定处理', 'info');
+    log(' 步骤 4: 平台特定处理', 'info');
     const platform = process.platform;
     if (platform === 'darwin') {
       await resetMacIdentifiers();
     } else {
-      log('ℹ️ 非 macOS 平台，跳过平台特定处理', 'info');
+      log(' 非 macOS 平台，跳过平台特定处理', 'info');
     }
     
     log('', 'info');
     log('='.repeat(60), 'success');
-    log('✅ Windsurf 机器ID重置成功！', 'success');
+    log(' Windsurf 机器ID重置成功！', 'success');
     log('='.repeat(60), 'success');
     log('', 'info');
-    log('💡 提示: 请重新启动 Windsurf 应用以使更改生效', 'warning');
+    log(' 提示: 请重新启动 Windsurf 应用以使更改生效', 'warning');
     
     return {
       success: true,
@@ -436,7 +436,7 @@ async function fullResetWindsurf(customInstallPath = null) {
   } catch (error) {
     log('', 'info');
     log('='.repeat(60), 'error');
-    log(`❌ Windsurf 机器ID重置失败: ${error.message}`, 'error');
+    log(` Windsurf 机器ID重置失败: ${error.message}`, 'error');
     log('='.repeat(60), 'error');
     
     return {
