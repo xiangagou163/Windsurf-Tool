@@ -2,6 +2,24 @@
 // 将 ipcRenderer 挂载到 window 对象，供全局使用
 window.ipcRenderer = require('electron').ipcRenderer;
 
+// 解决 asar 打包后解压依赖（如 follow-redirects）在渲染进程中无法解析的问题
+const path = require('path');
+const Module = require('module');
+const isPackaged = __dirname.includes('app.asar');
+const unpackedNodeModules = isPackaged
+  ? path.join(__dirname, '..', 'app.asar.unpacked', 'node_modules')
+  : path.join(__dirname, 'node_modules');
+
+if (isPackaged && !Module.globalPaths.includes(unpackedNodeModules)) {
+  Module.globalPaths.unshift(unpackedNodeModules);
+}
+
+if (isPackaged) {
+  const currentNodePath = process.env.NODE_PATH || '';
+  process.env.NODE_PATH = unpackedNodeModules + path.delimiter + currentNodePath;
+  Module._initPaths();
+}
+
 // 应用状态变量
 let isForceUpdateActive = false;
 let isMaintenanceModeActive = false;
