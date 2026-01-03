@@ -6,6 +6,9 @@ window.ipcRenderer = require('electron').ipcRenderer;
 let isForceUpdateActive = false;
 let isMaintenanceModeActive = false;
 let isApiUnavailable = false;
+// 版本检查冷却控制
+let lastVersionCheckTime = 0;
+const versionCheckCooldown = 30 * 1000; // 30s 冷却，避免频繁请求
 
 // 加载 lucide 图标库
 try {
@@ -4207,4 +4210,3 @@ ipcRenderer.on('batch-token-complete', (event, data) => {
   closeBtn.textContent = '关闭';
   closeBtn.className = 'btn btn-secondary'; // 恢复为普通按钮
 });
-
