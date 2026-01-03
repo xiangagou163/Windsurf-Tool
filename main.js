@@ -58,6 +58,12 @@ let mainWindow;
 // 当前批量注册的机器人实例，用于支持跨平台取消
 let currentRegistrationBot = null;
 
+// 应用状态变量
+let isForceUpdateActive = false;
+let isMaintenanceModeActive = false;
+let isApiUnavailable = false;
+let versionCheckInterval = null;
+
 // 应用名称 - 必须设置为 'Windsurf' 以使用相同的 Keychain 密钥
 app.setName('Windsurf');
 
